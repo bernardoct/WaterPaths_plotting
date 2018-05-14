@@ -76,8 +76,8 @@ def plot_joyplot_pathways(pathways_utility, construction_order, nweeks, s, rdm,
     weeks = []
     infra_built = []
     for p in pathways_utility:
-        weeks += list(p[1])
-        infra_built += list(p[2])
+        weeks += list((p[1] + np.random.normal(loc=0.0, scale=5.0, size=len(p[1]))))
+        infra_built += list(-p[2])
     x = weeks
     g = infra_built
 
@@ -94,9 +94,10 @@ def plot_joyplot_pathways(pathways_utility, construction_order, nweeks, s, rdm,
     g = sns.FacetGrid(df, row="g", hue="g", aspect=15, size=.5, palette=pal)
 
     # Draw the densities in a few steps
-    g.map(sns.kdeplot, "x", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.2)
-    g.map(sns.kdeplot, "x", clip_on=False, color="w", lw=2, bw=.2)
-    g.map(plt.axhline, y=0, lw=2, clip_on=False)
+    # g.map(sns.kdeplot, "x", clip_on=False, shade=True, alpha=1, lw=.0, bw=.5)
+    g.map(sns.rugplot, "x", clip_on=False, alpha=1, lw=2.)
+    # g.map(sns.kdeplot, "x", clip_on=False, color="b", lw=2, bw=.2)
+    g.map(plt.axhline, y=0, lw=0.2, clip_on=False)
 
     # Define and use a simple function to label the plot in axes coordinates
     def label(x, color, label):
@@ -108,11 +109,14 @@ def plot_joyplot_pathways(pathways_utility, construction_order, nweeks, s, rdm,
 
     # Set the subplots to overlap
     g.fig.subplots_adjust(hspace=-.25)
+    g.fig.set_size_inches(7.5, 7.5)
 
     # Remove axes details that don't play will with overlap
     g.set_titles("")
     g.set(yticks=[])
     g.despine(bottom=True, left=True)
+
+    plt.show()
 
 
 def plot_pathways_id(pathways_all_rdms, s, rdm, savefig_directory=''):

@@ -5,7 +5,9 @@ from plotting.pathways_plotting import plot_pathways_id
 bu_cy = LinearSegmentedColormap.from_list('BuCy', [(0, 0, 1), (0, 1, 1)])
 
 if __name__ == '__main__':
-    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
+    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
+    #                        'rdm_results/'
+    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
                            'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
