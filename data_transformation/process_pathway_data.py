@@ -24,11 +24,13 @@ def reorder_pathways(pathways_utility):
                   key=lambda x: list(x[1]) + [1e5] * (10 - len(x[1])))
 
 
-def create_fixed_length_pathways_array(weeks_vector, infra_option_or_npv, length):
-    fixed_length_array = np.zeros(length)
+def create_fixed_length_pathways_array(weeks_vector,
+                                       infra_option_or_npv, length):
+    fixed_length_array = np.ones(length) * -1
 
     for i in range(1, len(weeks_vector)):
-        fixed_length_array[weeks_vector[i-1]:weeks_vector[i]] = infra_option_or_npv[i - 1]
+        fixed_length_array[weeks_vector[i-1]:weeks_vector[i]] = \
+            infra_option_or_npv[i - 1]
 
     fixed_length_array[weeks_vector[-1]:-1] = infra_option_or_npv[-1]
 
