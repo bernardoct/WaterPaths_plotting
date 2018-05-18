@@ -66,34 +66,56 @@ if __name__ == '__main__':
                            objective_on_du.max(axis=0))).T
     ranges_du[0] = np.array([ranges_du[0, 1], ranges_du[0, 0]])
     brush_criteria = {6: [0.99, 1.0], 7: [0.0, 0.2], 10: [0.0, 0.05]}
-    paxis_matplotlib_hack([objective_on_du[249:]],
-                          columns_to_plot, color_column,
-                          [cm.get_cmap('autumn_r')],
-                          axis_labels,
-                          'DU on Re-eval Space',
-                          dataset_names[1],
-                          ranges=ranges_du, file_name='all_reeval_du.png',
-                          invert_axes=range(0, 20, 6),
-                          brush_criteria=brush_criteria)
-    paxis_matplotlib_hack([objective_on_du[:249]],
-                          columns_to_plot, color_column,
-                          [bu_cy_r],
-                          axis_labels,
-                          'WCU on Re-eval Space',
-                          dataset_names[0],
-                          ranges=ranges_du, file_name='all_reeval_wcu.png',
-                          invert_axes=range(0, 20, 6),
-                          brush_criteria=brush_criteria)
-    paxis_matplotlib_hack((objective_on_du[:249], objective_on_du[249:]),
-                          columns_to_plot, color_column,
-                          [bu_cy_r, cm.get_cmap('autumn_r')],
-                          axis_labels,
-                          'DU and WCU on Re-eval Space',
-                          dataset_names,
-                          ranges=ranges_du, file_name='all_reeval_du_wcu.png',
-                          invert_axes=range(0, 20, 6),
-                          brush_criteria=brush_criteria)
+    # paxis_plot([objective_on_du[249:]],
+    #            columns_to_plot, color_column,
+    #            [cm.get_cmap('autumn_r')],
+    #            axis_labels,
+    #                       'DU on Re-eval Space',
+    #            dataset_names[1],
+    #            axis_ranges=ranges_du, file_name='all_reeval_du.png',
+    #            axis_to_invert=range(0, 20, 6),
+    #            brush_criteria=brush_criteria)
+    # paxis_plot([objective_on_du[:249]],
+    #            columns_to_plot, color_column,
+    #            [bu_cy_r],
+    #            axis_labels,
+    #                       'WCU on Re-eval Space',
+    #            dataset_names[0],
+    #            axis_ranges=ranges_du, file_name='all_reeval_wcu.png',
+    #            axis_to_invert=range(0, 20, 6),
+    #            brush_criteria=brush_criteria)
+    # paxis_plot((objective_on_du[:249], objective_on_du[249:]),
+    #            columns_to_plot, color_column,
+    #            [bu_cy_r, cm.get_cmap('autumn_r')],
+    #            axis_labels,
+    #                       'DU and WCU on Re-eval Space',
+    #            dataset_names,
+    #            axis_ranges=ranges_du, file_name='all_reeval_du_wcu.png',
+    #            axis_to_invert=range(0, 20, 6),
+    #            brush_criteria=brush_criteria)
 
     # pathways_all = load_pathways_solution(files_root_directory, 0, 2)
     #
     # plot_pathways_id(pathways_all, 0, 1, sources, files_root_directory)
+
+    data1 = np.random.normal(size=(200, 8))
+    data2 = np.random.normal(size=(200, 8))
+    columns_to_plot = [0, 1, 3, 5, 7]
+    color_column = 0
+    axis_labels = ['axes ' + str(i) for i in range(8)]
+    dataset_names = ['Data set 1', 'Data set 2']
+    plot_ranges = [[-4., 4.]] * 8
+    axis_to_invert = [1, 6]
+    brush_criteria = {1: [-10., 0.4], 7: [-10., 0.6]}
+
+    paxis_plot((data1, data2),
+               columns_to_plot,
+               color_column,
+               [bu_cy_r, cm.get_cmap('autumn_r')],
+               axis_labels,
+               'Title Here',
+               dataset_names,
+               axis_ranges=plot_ranges,
+               # file_name='test.png',
+               axis_to_invert=axis_to_invert,
+               brush_criteria=brush_criteria)
