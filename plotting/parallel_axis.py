@@ -56,7 +56,7 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=0.5):
             np.multiply(not_brushed,
                         np.multiply(dataset[:, b] < max(brush_criteria[b]),
                                     dataset[:, b] > min(brush_criteria[b])))
-    alphas[[not c for c in not_brushed]] = 0.02
+    alphas[[not c for c in not_brushed]] = 0.03
 
     return alphas
 
