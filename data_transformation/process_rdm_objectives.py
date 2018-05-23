@@ -3,6 +3,27 @@ from multiprocessing import Pool
 from functools import partial
 
 
+def create_labels_list():
+    labels = [
+                 'Demand growth multiplier',
+                 'Bond interest rate multiplier',
+                 'Bond term multiplier',
+                 'Discount rate multiplier',
+             ] + \
+             ['Restriction effectiveness multiplier'] * 4 + \
+             ['Evaporation rate multiplier']
+
+    infra_labels = [[
+        'Permitting time multiplier {}'.format(i),
+        'Construction cost multiplier {}'.format(i)
+    ] for i in range(25)]
+
+    for il in infra_labels:
+        labels += il
+
+    return labels
+
+
 def read_rdm_file(files_root_directory, i):
     file = files_root_directory + "Objectives_by_rdm/" \
                                   "Objectives_RDM{}_sols0_to_368.csv".format(i)
@@ -36,9 +57,9 @@ def to_objectives_by_solution(objectives_rdm, nsols, nobjs,
             objectives_sol_jla[:, (nobjs_per_utility + 1) * (u + 1) - 1] \
                 = jla_sol[u]
 
-        non_crashed_rdm = objectives_sol_jla[:, 0] < 1.1
-
-        objectives_sol_jla = objectives_sol_jla[non_crashed_rdm]
+        # non_crashed_rdm = objectives_sol_jla[:, 0] < 1.1
+        #
+        # objectives_sol_jla = objectives_sol_jla[non_crashed_rdm]
 
         np.save(files_root_directory + 'Objectives_by_solution/'
                                        'Objectives_s{}.npy'.format(s),

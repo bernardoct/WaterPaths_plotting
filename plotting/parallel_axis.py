@@ -56,7 +56,7 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=0.5):
             np.multiply(not_brushed,
                         np.multiply(dataset[:, b] < max(brush_criteria[b]),
                                     dataset[:, b] > min(brush_criteria[b])))
-    alphas[[not c for c in not_brushed]] = 0.03
+    alphas[[not c for c in not_brushed]] = 0.01
 
     return alphas
 
@@ -100,7 +100,8 @@ def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
         axis.append(cax)
 
         # Set color bar font
-        cbar.set_label('{} {}'.format(name, labels[color_column]),
+        cbar.set_label('{} {}'.format(name if len(dataset_names) > 1
+                                      else dataset_names, labels[color_column]),
                        **{'family': fontname_body})
 
         cbar.set_ticks([vmin, vmax])

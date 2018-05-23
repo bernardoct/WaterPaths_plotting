@@ -73,14 +73,24 @@ def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, savefig_directory='
 
 
 def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
-                     construction_order, savefig_directory=''):
+                     construction_order, savefig_directory='',
+                     cmap=cm.get_cmap('jet')):
     fig, ax = plt.subplots(figsize=(10, 5))
 
     pathways = np.array([create_fixed_length_pathways_array(p[1], p[2], nweeks)
-                        for p in pathways_utility])[:, :-2]
+                        for p in pathways_utility], dtype=float)[:, :-2]
 
-    for p, pu in zip(pathways, pathways_utility):
-        plt.plot(p, c='r', alpha=0.002, lw=4)
+    count = 0
+    ninfra = np.max(pathways + 1)
+    for p in pathways[np.argsort(np.random.rand(500))]:
+        count += 1
+        print count
+        t = np.arange(0, len(p), 10)
+        colors = cmap((p[t] + 1) / (ninfra))
+        plt.plot(t, p[t], c='grey',
+                    alpha=0.01, lw=1)
+        plt.scatter(t, p[t], c=colors,
+                    alpha=0.002, lw=0.1)
 
     labels = ['', sources[-1]] + list(sources[construction_order])
     ax.set_yticklabels(labels)
@@ -89,7 +99,8 @@ def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
     fig.subplots_adjust(left=0.4)
 
     if savefig_directory == '':
-        plt.show()
+        # plt.show()
+        pass
     else:
         plt.savefig(savefig_directory +
                     'Pathways_s{}_RDM{}_2d.png'.format(s, rdm))
@@ -161,14 +172,17 @@ def plot_pathways_id(pathways_all_rdms, s, rdm, sources, savefig_directory=''):
     for p in durham_pathways_reordered:
         p[2] = construction_order_expanded[p[2]]
 
-    # plot_construction_moment(durham_pathways_reordered, s, rdm,
-    #                          savefig_directory=savefig_directory)
+    plot_construction_moment(durham_pathways_reordered, s, rdm,
+                             savefig_directory=savefig_directory)
+    plot_colormap_pathways(durham_pathways_reordered, 2400, s, rdm,
+                           savefig_directory=savefig_directory)
+    plot_2d_pathways(durham_pathways_reordered, 2400, s, rdm, sources,
+                     construction_order_ids,
+                     savefig_directory=savefig_directory)
+
+    # Bad visualizations
     # plot_3d_pathway_plot(durham_pathways_reordered, 2400, s, rdm,
     #                      savefig_directory)
-    # plot_colormap_pathways(durham_pathways_reordered, 2400, s, rdm,
-    #                        savefig_directory=savefig_directory)
-    plot_2d_pathways(durham_pathways_reordered, 2400, s, rdm, sources,
-                     construction_order_ids, savefig_directory=savefig_directory)
     # plot_joyplot_pathways(durham_pathways_reordered, construction_order, 2400,
     #                       s, rdm, savefig_directory=savefig_directory)
 
