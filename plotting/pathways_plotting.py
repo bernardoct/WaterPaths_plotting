@@ -136,7 +136,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, #cmap,
 def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
                      construction_order, savefig_directory='', ninfra=0,
                      utility_name='', year0=0, monocromatic=False,
-                     plot_unique_pathways=False, lt_rof=()):
+                     lt_rof=()):
     nrealizations = len(pathways_utility)
 
     if len(lt_rof) == 0:
@@ -168,7 +168,6 @@ def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
     pathways_to_plot = [pathways_utility[i]
                         for i in np.random.permutation(
             range(nrealizations))[:npath]]
-    # pathways_to_plot = pathways_utility
 
     # Create lines for pathways chart
     longest_pathway = 0
@@ -195,20 +194,11 @@ def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
             vertical_lines.append([[weeks[i], weeks[i]],
                                    [infras[i - 1], infras[i]]])
 
-
-    # if plot_unique_pathways:
-    #     horizontal_lines = [[x[:len(x) / 2], x[len(x) / 2:]] for x in
-    #                         set(tuple(x[0] + x[1]) for x in horizontal_lines)]
-    #     vertical_lines =   [[x[:len(x) / 2], x[len(x) / 2:]] for x in
-    #                         set(tuple(x[0] + x[1]) for x in vertical_lines)]
-
     # Assign correct line color
     for hl in horizontal_lines:
         horizontal_lines_colors.append('grey' if monocromatic else
                                        cmap(normalize(hl[1][0])))
 
-    count = 0
-    nlines = len(horizontal_lines)
     alpha = max(0.002, 1. / min(npath, len(pathways_to_plot)))
     # Plot vertical lines first, so that they're underneath horizontal ones
     for line in vertical_lines:
@@ -216,7 +206,6 @@ def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
         # print '{}/{}'.format(count, nlines)
         ax.plot(line[0], line[1], c='gray', alpha=alpha, lw=1)
 
-    count = 0
     # Plot horizontal lines
     for line, color in zip(horizontal_lines, horizontal_lines_colors):
         # count += 1

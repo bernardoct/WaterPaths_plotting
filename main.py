@@ -287,10 +287,10 @@ def plot_all_paxis():
 
 
 if __name__ == '__main__':
-    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-                           'rdm_results/'
-    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
     #                        'rdm_results/'
+    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+                           'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -472,8 +472,6 @@ if __name__ == '__main__':
                                               create_labels_list(),
                                               files_root_directory)
 
-    # for s, most_influential_factors in zip(robust_for_all,
-    #                                       most_influential_factors_all):
 
     s = robust_for_all[0]
     utility_to_plot = 1
@@ -487,14 +485,9 @@ if __name__ == '__main__':
     rdm_min = np.argmin(rdm_factors[:, most_influential_factors[-1]])
     rdm_mono = rdm_max
 
-    pathways_all = load_pathways_solution('F:/Dropbox/Bernardo/Research/'
-                                          'WaterPaths_results/'
-                                          're-evaluation_against_du/'
-                                          'Pathways/',
+    pathways_all = load_pathways_solution(files_root_directory,
                                           s, [rdm_max, rdm_min])
-    pathways_all_mono = load_pathways_solution('F:/Dropbox/Bernardo/Research/'
-                                          'WaterPaths_results/'
-                                          'rdm_results/',
+    pathways_all_mono = load_pathways_solution(files_root_directory,
                                           s, [rdm_max])
 
     # # SORT REALIATIONS BY INFLOWS, EVAPORATIONS AND DEMANDS. NOT FRUITFUL
@@ -547,8 +540,6 @@ if __name__ == '__main__':
     #                  savefig_directory=files_root_directory + 'Figures/',
     #                  utility_name=name, year0=2015, monocromatic=True)
 
-
-
     pathways_list_utility_low = \
         get_pathways_by_utility_realization(pathways_all[1])
     utility_pathways_low = pathways_list_utility_low[utility_to_plot]
@@ -574,7 +565,6 @@ if __name__ == '__main__':
     #                  utility_name=name, year0=2015, monocromatic=True)
 
 
-
     # Plot pathways
     pathways_list_utility_mono = \
         get_pathways_by_utility_realization(pathways_all_mono[0])
@@ -591,7 +581,6 @@ if __name__ == '__main__':
     #                  savefig_directory=files_root_directory + 'Figures/',
     #                  utility_name=name, year0=2015, monocromatic=True,
     #                  lt_rof=lt_rof_mono)
-
 
 
     # plot_pathways_id(utility_pathways_high, s, rdm_max, sources,

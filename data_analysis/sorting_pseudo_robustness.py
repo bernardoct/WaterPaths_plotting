@@ -75,25 +75,24 @@ def get_most_influential_rdm_factors(objectives_by_solution, non_crashed_by_solu
         print 'Performing scenario discovery for solution {}'.format(sol_number)
 
         if not_group_objectives:
-            most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
-                logistic_regression(
-                    objectives_by_solution[sol_number][:, apply_criteria_on_objs],
-                    rdm_factors[non_crashed_by_solution[sol_number]],
-                    sol_number, performance_criteria,
-                    plot=False
-                )
+            objectives = objectives_by_solution[sol_number][:, apply_criteria_on_objs]
         else:
-            most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
-                logistic_regression(
-                    group_objectives(
+            objectives = group_objectives(
                         objectives_by_solution[sol_number],
                         ['max', 'min', 'min', 'min',
                          'min', 'min']
-                    )[:, apply_criteria_on_objs],
-                    rdm_factors[non_crashed_by_solution[sol_number]],
-                    sol_number, performance_criteria,
-                    plot=False
-                )
+                    )[:, apply_criteria_on_objs]
+
+        objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
+
+        most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
+            logistic_regression(
+                objectives_normalized,
+                rdm_factors[non_crashed_by_solution[sol_number]],
+                sol_number, performance_criteria,
+                plot=False
+            )
+
         most_influential_factors_all.append(most_influential_factors)
         pass_fail_all.append(pass_fail)
         non_crashed_rdm_all.append(non_crashed_rdm)
@@ -273,6 +272,7 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
     )
     plt.show()
 
+
 def get_most_robust_solutions_all_utilities(robustnesses, percentile):
     ix = int(len(robustnesses[0]) * percentile)
     percentile_sols = np.array([r[0, 1] * percentile for r in robustnesses])
@@ -295,15 +295,18 @@ def get_most_robust_solutions_all_utilities(robustnesses, percentile):
 def important_factors_multiple_solutions_plot(most_influential_factors_all,
                                               lr_coef_all, nfactors, labels,
                                               files_root_directory):
+    title_font = 'Gill Sans MT'
+    everything_else_font = 'CMU Bright'
+    # everything_else_font = 'Ubuntu'
     nsols = len(most_influential_factors_all)
 
     factors_to_plot = np.unique(
         np.array(most_influential_factors_all)[:, -nfactors:].ravel()
-    )#[:3] #FIXME: This 3 is to remove permitting times, since this is artificial because they were not used in the simulation/optmization due to a bug in the WaterPaths setup of the NC problem
+    )
     nfactors_to_plot = len(factors_to_plot)
 
     fig, axes = plt.subplots(1, nsols, sharey=True, sharex=True,
-                             figsize=(8.5, 2.5))
+                             figsize=(10, 3.5))
 
     for coefs, axis, c, s in zip(lr_coef_all, axes,
                                  cm.get_cmap('Accent').colors,
@@ -313,14 +316,13 @@ def important_factors_multiple_solutions_plot(most_influential_factors_all,
                   color=c)
         axis.set_yticks(range(nfactors_to_plot))
         axis.set_yticklabels(np.array(labels)[factors_to_plot],
-                        **{'fontname' : 'CMU Bright', 'size' : 13})
-        axis.set_xlabel(
-            'Relative Importance\n(logistic regression coefficients)',
-                        **{'fontname' : 'CMU Bright', 'size' : 13})
+                             **{'fontname': everything_else_font, 'size': 13})
+        axis.set_xlabel('Relative Importance\n(logistic regression coefficients)',
+                        **{'fontname': everything_else_font, 'size': 13})
         axis.set_xticks(axis.get_xlim())
-        axis.set_xticklabels(['Low', 'High'], **{'fontname':'CMU Bright'})
+        axis.set_xticklabels(['Low', 'High'], **{'fontname': everything_else_font})
         axis.set_title('Compromise\nSolution {}'.format(s + 1),
-                       **{'fontname' : 'Gill Sans MT', 'size' : 15})
+                       **{'fontname': title_font, 'size': 15})
 
     plt.savefig(files_root_directory + 'important_factors.svg')
     plt.show()
