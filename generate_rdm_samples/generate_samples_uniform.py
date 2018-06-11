@@ -5,7 +5,7 @@ import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 from pyDOE import lhs
 
-plt.style.use('ggplot')
+# plt.style.use('ggplot')
 
 
 def trend(x, A, T, p):

@@ -2,29 +2,289 @@ from matplotlib.colors import LinearSegmentedColormap
 
 from data_analysis.logistic_regression import logistic_regression
 from data_analysis.sorting_pseudo_robustness import \
-    calculate_pseudo_robustness_uniform, calculate_pseudo_robustness_beta
+    calculate_pseudo_robustness_uniform, calculate_pseudo_robustness_beta, \
+    calculate_pseudo_robustness, pseudo_robustness_plot, \
+    influential_factors_plot, get_most_robust_solutions_all_utilities, \
+    get_most_influential_rdm_factors, important_factors_multiple_solutions_plot
 from data_transformation.process_rdm_objectives import *
+from generate_rdm_samples.generate_samples_uniform import trend
+from plotting.parallel_axis import __calculate_alphas
 from plotting.pathways_plotting import *
 from plotting.parallel_axis import *
+
 
 bu_cy = LinearSegmentedColormap.from_list('BuCy', [(0, 0, 1), (0, 1, 1)])
 bu_cy_r = bu_cy.reversed()
 
-def group_objectives(objectives, max_min):
-    nsols = len(objectives)
-    nobjs_total = len(objectives[0])
-    nobjs = len(max_min)
-    grouped_objs = np.zeros((nsols, len(max_min)))
-    for i in range(nobjs):
-        objs = range(i, nobjs_total, nobjs)
-        if max_min[i] == 'min':
-            grouped_objs[:, i] = np.max(objectives[:, objs], axis=1)
-        elif max_min[i] == 'max':
-            grouped_objs[:, i] = np.min(objectives[:, objs], axis=1)
-        else:
-            raise Exception('You must specify either max or min')
+blues_hc_colors = np.array([[33., 68., 120.], [95., 141., 211.],
+                            [215., 227., 244.]]) / 256
+oranges_hc_colors = np.array([[170, 68., 0.], [225., 127., 42.],
+                              [255., 230., 213.]]) / 256
+light_greys = np.array([[0.7, 0.7, 0.7], [0.9, 0.9, 0.9]])
 
-    return grouped_objs
+oranges_hc = LinearSegmentedColormap.from_list('Oranges_hc', oranges_hc_colors)
+blues_hc = LinearSegmentedColormap.from_list('Blues_hc', blues_hc_colors)
+light_greys_hc = LinearSegmentedColormap.from_list('Light_greys_hc', light_greys)
+
+cmaps = [oranges_hc, blues_hc]
+
+
+def plot_paxis_demo():
+    parallel_axis([np.array([[0.99, 0.4, 1e2, 0.3, 0.1, 0.3],
+                             [0.99, 0.4, 1e2, 0.3, 0.1, 0.3]])],
+                  columns_to_plot,
+                  color_column,
+                  [cmaps[0]],
+                  axis_labels,
+                  'Demo Parallel Axis Plot',
+                  ['Some optimization'],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'demo_paxis1.svg',
+                  axis_to_invert=[0],
+                  size=(9, 3),
+                  lw=2.
+                  )
+    parallel_axis([np.array([[0.99, 0.4, 1e2, 0.3, 0.1, 0.3],
+                          [0.9, 0.05, 4e2, 0.4, 0.3, 0.5]])],
+                  columns_to_plot,
+                  color_column,
+                  [cmaps[0]],
+                  axis_labels,
+                  'Demo Parallel Axis Plot',
+                  [dataset_names[1]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'demo_paxis1.svg',
+                  axis_to_invert=[0],
+                  size=(9, 3),
+                  lw=2.
+                  )
+
+
+def plot_all_paxis():
+    # parallel_axis([objective_on_du_grouped[249:]],
+    #               columns_to_plot,
+    #               color_column,
+    #               [cmaps[1]],
+    #               axis_labels,
+    #               'DU out of optimization',
+    #               [dataset_names[1]],
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory + 'du_on_du.svg',
+    #               axis_to_invert=[0],
+    #               lw=2.,
+    #               size=(9, 3)
+    #               )
+    # parallel_axis([objective_on_wcu_grouped[:249]],
+    #               columns_to_plot, color_column,
+    #               [cmaps[0]],
+    #               axis_labels,
+    #               'WCU out of optimization',
+    #               [dataset_names[0]],
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory + 'wcu_on_wcu.svg',
+    #               axis_to_invert=[0],
+    #               lw=2.,
+    #               size=(9, 3)
+    #               )
+    # parallel_axis([objective_rdm_grouped[249:]],
+    #               columns_to_plot, color_column,
+    #               [cmaps[1]],
+    #               axis_labels,
+    #               'DU on Re-evaluation Space',
+    #               [dataset_names[1]],
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory + 'du_on_reeval.svg',
+    #               axis_to_invert=[0],
+    #               lw=2.,
+    #               size=(9, 3)
+    #               )
+    # parallel_axis([objective_rdm_grouped[:249]],
+    #               columns_to_plot, color_column,
+    #               [cmaps[0]],
+    #               axis_labels,
+    #               'WCU on Re-evaluation Space',
+    #               [dataset_names[0]],
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory + 'wcu_on_reeval.svg',
+    #               axis_to_invert=[0],
+    #               lw=2.,
+    #               size=(9, 3)
+    #               )
+    parallel_axis([objective_on_du_grouped[249:], objective_rdm_grouped[249:]],
+                  columns_to_plot, color_column,
+                  [light_greys_hc, cmaps[1]],
+                  axis_labels,
+                  'DU on Re-evaluation Space',
+                  ['DU Optimization', dataset_names[1]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'du_on_reeval_back_du_on_du.svg',
+                  axis_to_invert=[0],
+                  lw=2.,
+                  size=(9, 3)
+                  )
+    parallel_axis([objective_on_wcu_grouped[:249], objective_rdm_grouped[:249]],
+                  columns_to_plot, color_column,
+                  [light_greys_hc, cmaps[0]],
+                  axis_labels,
+                  'WCU on Re-evaluation Space',
+                  ['WCU Optimization', dataset_names[0]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'wcu_on_reeval_back_wcu_on_wcu.svg',
+                  axis_to_invert=[0],
+                  lw=2.,
+                  size=(9, 3)
+                  )
+    # parallel_axis((objective_on_wcu_grouped[:249], objective_on_wcu_grouped[249:]),
+    #               columns_to_plot, color_column,
+    #               cmaps,
+    #               axis_labels,
+    #               'DU and WCU on WCU Space',
+    #               dataset_names,
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory + 'all_on_wcu.svg',
+    #               axis_to_invert=[0],
+    #               lw=2.
+    #               )
+    # parallel_axis((objective_on_du_grouped[:249], objective_on_du_grouped[249:]),
+    #               columns_to_plot, color_column,
+    #               cmaps,
+    #               axis_labels,
+    #               'DU and WCU on DU Space',
+    #               dataset_names,
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory + 'all_on_du.svg',
+    #               axis_to_invert=[0],
+    #               lw=2.
+    #               )
+    # parallel_axis((objective_rdm_grouped[:249], objective_rdm_grouped[249:]),
+    #               columns_to_plot, color_column,
+    #               cmaps,
+    #               axis_labels,
+    #               'DU and WCU on Re-evaluation Space',
+    #               dataset_names,
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory + 'all_reeval_wcu_du.svg',
+    #               axis_to_invert=[0],
+    #               lw=2.
+    #               )
+    # parallel_axis((objective_rdm_grouped[:249], objective_rdm_grouped[249:]),
+    #               columns_to_plot, color_column,
+    #               cmaps,
+    #               axis_labels,
+    #               'DU and WCU on Re-evaluation Space',
+    #               dataset_names,
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory +
+    #                      'all_reeval_wcu_du_brushed_99_20_10.svg',
+    #               axis_to_invert=[0],
+    #               brush_criteria=brush_criteria1,
+    #               lw=2.
+    #               )
+    # parallel_axis((objective_rdm_grouped[:249], objective_rdm_grouped[249:]),
+    #               columns_to_plot, color_column,
+    #               cmaps,
+    #               axis_labels,
+    #            'DU and WCU on Re-evaluation Space',
+    #               dataset_names,
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory +
+    #                      'all_reeval_wcu_du_brushed_98_20_10.svg',
+    #               axis_to_invert=[0],
+    #               brush_criteria=brush_criteria2,
+    #               lw=2.
+    #               )
+    # parallel_axis((objective_rdm_grouped[:249], objective_rdm_grouped[249:]),
+    #               columns_to_plot, color_column,
+    #               cmaps,
+    #               axis_labels,
+    #            'DU and WCU on Re-evaluation Space',
+    #               dataset_names,
+    #               axis_ranges=ranges_all,
+    #               file_name=files_root_directory +
+    #                      'all_reeval_wcu_du_brushed_97_20_10.svg',
+    #               axis_to_invert=[0],
+    #               brush_criteria=brush_criteria3,
+    #               lw=2.
+    #               )
+    parallel_axis([objective_rdm_grouped[249:]],
+                  columns_to_plot, color_column,
+                  [cmaps[1]],
+                  axis_labels,
+                  'DU on Re-evaluation Space',
+                  [dataset_names[1]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'du_on_reeval_brushed_99_20_10.svg',
+                  axis_to_invert=[0],
+                  lw=2.,
+                  size=(9, 3),
+                  brush_criteria=brush_criteria1,
+                  )
+    parallel_axis([objective_rdm_grouped[249:]],
+                  columns_to_plot, color_column,
+                  [cmaps[1]],
+                  axis_labels,
+                  'DU on Re-evaluation Space',
+                  [dataset_names[1]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'du_on_reeval_brushed_98_20_10.svg',
+                  axis_to_invert=[0],
+                  lw=2.,
+                  size=(9, 3),
+                  brush_criteria=brush_criteria2,
+                  )
+    parallel_axis([objective_rdm_grouped[249:]],
+                  columns_to_plot, color_column,
+                  [cmaps[1]],
+                  axis_labels,
+                  'DU on Re-evaluation Space',
+                  [dataset_names[1]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'du_on_reeval_brushed_97_20_10.svg',
+                  axis_to_invert=[0],
+                  lw=2.,
+                  size=(9, 3),
+                  brush_criteria=brush_criteria3,
+                  )
+    parallel_axis([objective_rdm_grouped[:249]],
+                  columns_to_plot, color_column,
+                  [cmaps[0]],
+                  axis_labels,
+                  'WCU on Re-evaluation Space',
+                  [dataset_names[0]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'wcu_on_reeval_brushed_99_20_10.svg',
+                  axis_to_invert=[0],
+                  lw=2.,
+                  size=(9, 3),
+                  brush_criteria=brush_criteria1,
+                  )
+    parallel_axis([objective_rdm_grouped[:249]],
+                  columns_to_plot, color_column,
+                  [cmaps[0]],
+                  axis_labels,
+                  'WCU on Re-evaluation Space',
+                  [dataset_names[0]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'wcu_on_reeval_brushed_98_20_10.svg',
+                  axis_to_invert=[0],
+                  lw=2.,
+                  size=(9, 3),
+                  brush_criteria=brush_criteria2,
+                  )
+    parallel_axis([objective_rdm_grouped[:249]],
+                  columns_to_plot, color_column,
+                  [cmaps[0]],
+                  axis_labels,
+                  'WCU on Re-evaluation Space',
+                  [dataset_names[0]],
+                  axis_ranges=ranges_all,
+                  file_name=files_root_directory + 'wcu_on_reeval_brushed_97_20_10.svg',
+                  axis_to_invert=[0],
+                  lw=2.,
+                  size=(9, 3),
+                  brush_criteria=brush_criteria3,
+                  )
+
 
 if __name__ == '__main__':
     files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
@@ -36,38 +296,38 @@ if __name__ == '__main__':
     n_objectives = 20
     n_objectives_per_utility_plus_jla = 6
     n_utilities = 4
-    sources = np.array(["Lake Michie & Little River Res. (Durham)",
-                        "Falls Lake",
-                        "Wheeler-Benson Lakes",
-                        "Stone Quarry",
-                        "Cane Creek Reservoir",
-                        "University Lake",
-                        "Jordan Lake",
-                        "Little River Reservoir (Raleigh)",
-                        "Richland Creek Quarry",
-                        "Teer Quarry",
-                        "Neuse River Intake",
-                        "Dummy Node",
-                        "Low Stone Quarry Expansion",
-                        "High Stone Quarry Expansion",
-                        "University Lake Expansion",
-                        "Low Lake Michie Expansion",
-                        "High Lake Michie Expansion",
-                        "Falls Lake Reallocation",
-                        "Low Reclaimed Water System",
-                        "High Reclaimed Water System",
-                        "Low WJLWTP",
-                        "High WJLWTP",
-                        "Cary WTP upgrade 1",
-                        "Cary WTP upgrade 2",
-                        "Cane Creek Reservoir Expansion",
-                        "Status-quo"])
+    sources = np.array(['Lake Michie & Little River Res. (Durham)',
+                        'Falls Lake',
+                        'Wheeler-Benson\nLakes',
+                        'Stone Quarry',
+                        'Cane Creek\nReservoir',
+                        'University Lake',
+                        'Jordan Lake',
+                        'Little River\nReservoir (Raleigh)',
+                        'Richland\nCreek Quarry',
+                        'Teer Quarry',
+                        'Neuse River\nIntake',
+                        'Dummy Node',
+                        'Low StoneQuarry\nExpansion',
+                        'High Stone\nQuarry Expansion',
+                        'University Lake\nExpansion',
+                        'Low Lake Michie\nExpansion',
+                        'High Lake \nMichie Expansion',
+                        'Falls Lake \nReallocation',
+                        'Low Reclaimed\nWater System',
+                        'High Reclaimed\nWater System',
+                        'Low WJLWTP',
+                        'High WJLWTP',
+                        'Cary WTP\nupgrade 1',
+                        'Cary WTP\nupgrade 2',
+                        'Cane Creek\nReservoir Expansion',
+                        'Status-quo'])
 
     # Load objectives for each RDM scenario organized by solution (list
     # of matrixes)
-    objectives_by_solution = load_objectives(files_root_directory,
-                                             n_solutions, n_rdm_scenarios,
-                                             n_objectives, n_utilities)
+    objectives_by_solution, non_crashed_by_solution = \
+        load_objectives(files_root_directory, n_solutions, n_rdm_scenarios,
+                        n_objectives, n_utilities)#, processed=False)
 
     # Back-calculate objectives for each solution as if objectives had been
     # calculated with 1,000 * 2,000 = 2e6 fully specified worlds.
@@ -80,108 +340,35 @@ if __name__ == '__main__':
     objective_on_du = load_on_du_objectives(files_root_directory, on='du')
 
     ranges = [[0.8, 1], [0, 0.4], [0, 800], [0, 0.5], [0, 0.3], [0, 1.0]] * 4
-    axis_labels = ['Reliability', 'Rest. Freq.', 'Infra NPV', 'Financial Cost',
-                   'Worse\nCase Cost', 'Jordan Lake\nAllocation'] * n_utilities
+    axis_labels = ['Reliability', 'Restriction\nFrequency',
+                   'Infrastructure Net\nPresent Value', 'Financial Cost',
+                   'Financial\nRisk', 'Jordan Lake\nAllocation'] * n_utilities
     dataset_names = ('WCU Optimization', 'DU Optimization')
-    # u = 1
-    # color_column = n_objectives_per_utility_plus_jla * u
-    # columns_to_plot = np.arange(n_objectives_per_utility_plus_jla * u,
-    #                             n_objectives_per_utility_plus_jla * u + 6)
-    columns_to_plot = range(6)
-    color_column = 1
 
-    brush_criteria = {0: [0.99, 1.0], 1: [0.0, 0.2], 4: [0.0, 0.10]}
+    columns_to_plot = range(6)
+    color_column = 0
+
+    # Three different brushing criteria relaxing reliability
+    brush_criteria1 = {0: [0.99, 1.0], 1: [0.0, 0.2], 4: [0.0, 0.10]}
+    brush_criteria2 = {0: [0.98, 1.0], 1: [0.0, 0.2], 4: [0.0, 0.10]}
+    brush_criteria3 = {0: [0.97, 1.0], 1: [0.0, 0.2], 4: [0.0, 0.10]}
+
+    # Group solutions
     objective_rdm_grouped = group_objectives(objectives_rdm,
                                              ['max', 'min', 'min', 'min', 'min',
                                               'min'])
     objective_on_wcu_grouped = group_objectives(objective_on_wcu,
                                              ['max', 'min', 'min', 'min', 'min',
                                               'min'])
+    #       Get rid of two really low reliability solutions that are shifting
+    #       the blue and making all lines look dark except the corresponding few.
+    objective_on_wcu_grouped = objective_on_wcu_grouped[
+        objective_on_wcu_grouped[:, 0] > 0.92]
+
     objective_on_du_grouped = group_objectives(objective_on_du,
-                                             ['max', 'min', 'min', 'min', 'min',
-                                              'min'])
-    ranges_du = np.vstack((objective_rdm_grouped.min(axis=0),
-                           objective_rdm_grouped.max(axis=0))).T
-    ranges_du[0] = np.array([ranges_du[0, 1], ranges_du[0, 0]])
-    # cmap_wcu = bu_cy_r
-    # cmap_du = cm.get_cmap('autumn_r')
-    cmap_wcu = bu_cy
-    cmap_du = cm.get_cmap('autumn')
-    paxis_plot([objective_rdm_grouped[249:]],
-               columns_to_plot, color_column,
-               [cmap_du],
-               axis_labels,
-               'DU on Re-eval Space',
-               dataset_names[1],
-               axis_ranges=ranges_du,
-               file_name=files_root_directory + 'du_on_reeval.png',
-               axis_to_invert=[0]#,#range(0, 20, 6),
-               # brush_criteria=brush_criteria
-               )
-    paxis_plot([objective_rdm_grouped[:249]],
-               columns_to_plot, color_column,
-               [cmap_wcu],
-               axis_labels,
-               'WCU on Re-eval Space',
-               dataset_names[0],
-               axis_ranges=ranges_du,
-               file_name=files_root_directory + 'wcu_on_reeval.png',
-               axis_to_invert=[0]#,#range(0, 20, 6),
-               # brush_criteria=brush_criteria
-               )
-    paxis_plot([objective_on_du_grouped[249:]],
-               columns_to_plot, color_column,
-               [cmap_du],
-               axis_labels,
-               'DU on Re-eval Space',
-               dataset_names[1],
-               axis_ranges=ranges_du,
-               file_name=files_root_directory + 'du_on_du.png',
-               axis_to_invert=[0]#,#range(0, 20, 6),
-               # brush_criteria=brush_criteria
-               )
-    paxis_plot([objective_on_wcu_grouped[:249]],
-               columns_to_plot, color_column,
-               [cmap_wcu],
-               axis_labels,
-               'WCU on Re-eval Space',
-               dataset_names[0],
-               axis_ranges=ranges_du,
-               file_name=files_root_directory + 'wcu_on_wcu.png',
-               axis_to_invert=[0]#,#range(0, 20, 6),
-               # brush_criteria=brush_criteria
-               )
-    paxis_plot((objective_rdm_grouped[:249], objective_rdm_grouped[249:]),
-               columns_to_plot, color_column,
-               [cmap_wcu, cmap_du],
-               axis_labels,
-               'DU and WCU on Re-eval Space',
-               dataset_names,
-               axis_ranges=ranges_du,
-               file_name=files_root_directory + 'all_reeval_wcu_du.png',
-               axis_to_invert=[0]#,#range(0, 20, 6),
-               # brush_criteria=brush_criteria
-               )
-    paxis_plot((objective_rdm_grouped[:249], objective_rdm_grouped[249:]),
-               columns_to_plot, color_column,
-               [cmap_wcu, cmap_du],
-               axis_labels,
-               'DU and WCU on Re-eval Space',
-               dataset_names,
-               axis_ranges=ranges_du,
-               file_name=files_root_directory + 'all_reeval_wcu_du_brushed.png',
-               axis_to_invert=[0],#range(0, 20, 6),
-               brush_criteria=brush_criteria
-               )
+                                               ['max', 'min', 'min', 'min',
+                                               'min', 'min'])
 
-
-
-    sol_number = 273
-    # pathways_all = load_pathways_solution('F:/Dropbox/Bernardo/Research/WaterPaths_results/re-evaluation_against_du/', sol_number, 2)
-    #
-    # plot_pathways_id(pathways_all, sol_number, 1, sources, files_root_directory)
-
-    # Load RDM files in a single table
     rdm_utilities = np.loadtxt(files_root_directory
                                + 'rdm_utilities_reeval.csv',
                                delimiter=',')
@@ -192,69 +379,224 @@ if __name__ == '__main__':
                                    + 'rdm_water_sources_reeval.csv',
                                    delimiter=',')[:, rdm_sources_meaningful]
 
-
-    rdm_shape = (len(rdm_dmp), rdm_utilities.shape[1] + rdm_dmp.shape[1]
-                 + rdm_water_sources.shape[1])
     rdm_factors = np.hstack((rdm_utilities, rdm_dmp, rdm_water_sources))
+    rdm_inflows = np.loadtxt(files_root_directory
+                               + 'rdm_inflows.csv')
 
-    lows = np.array(
-        [0.5, 1.0, 0.6, 0.6] + [0.9] * 4 + [0.8] + [0.75, 1.0] * 18)
-    highs = np.array(
-        [2., 1.2, 1.0, 1.4] + [1.1] * 4 + [1.2] + [1.5, 1.2] * 18)
-    means = np.array(
-        [1., 1.0, 1.0, 1.0] + [1.0] * 4 + [1.0] + [1.0, 1.0] * 18)
+    # Calculate ranges
+    all_to_plot = np.vstack((objective_rdm_grouped,
+                             objective_on_wcu_grouped,
+                             objective_on_du_grouped))
+    ranges_all = np.vstack((all_to_plot.min(axis=0),
+                            all_to_plot.max(axis=0))).T
+    ranges_all = np.array([[0.85, 0., 77, 0., 0., 0.25],
+                           [1., 0.6, 720, 0.6, 0.4, 0.6]]).T
 
-    performance_criteria = (0.990, 0.2, 1e5, 1e5, 0.1, 1e5)
+    # cmap_wcu = bu_cy_r
+    # cmap_du = cm.get_cmap('autumn_r')
+    # cmap_wcu = bu_cy
+    # cmap_du = cm.get_cmap('autumn')
 
-    most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
-                logistic_regression(
-                group_objectives(objectives_by_solution[sol_number],
-                                 ['max', 'min', 'min', 'min', 'min', 'min']),
-                rdm_factors, sol_number, performance_criteria, plot=True
-            )
+    # # Plot all parallel axis plots
+    # plot_all_paxis()
+    # plot_paxis_demo()
+
+    # Retrieve solutions that met brushing criteria
+    alphas = __calculate_alphas(objective_rdm_grouped, brush_criteria1,
+                                base_alpha=1.)
+    good_sols = np.argwhere(alphas - .01)
+
+    # # Robustness calculation
+    performance_criteria = (0.990, 0.2, 0.1)
+    # calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
+    #                             performance_criteria, files_root_directory,
+    #                             (0, 1, 4), 'OWASA', rdm_factors,
+    #                             not_group_objectives=True)
+    # calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
+    #                             performance_criteria, files_root_directory,
+    #                             (6, 7, 10), 'Durham', rdm_factors,
+    #                             not_group_objectives=True)
+    # calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
+    #                             performance_criteria, files_root_directory,
+    #                             (12, 13, 16), 'Cary', rdm_factors,
+    #                             not_group_objectives=True)
+    # calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
+    #                             performance_criteria, files_root_directory,
+    #                             (18, 19, 22), 'Raleigh', rdm_factors,
+    #                             not_group_objectives=True)
+
+    utilities = ['OWASA', 'Durham', 'Cary', 'Raleigh']
+    robustnesses = []
+    for utility in utilities:
+        robustnesses.append(
+            np.loadtxt(files_root_directory + 'robustness_{}.csv'
+                       .format(utility), delimiter=',')
+        )
+
+    robust_for_all, robustnesses_ordered_by_sol_id = \
+        get_most_robust_solutions_all_utilities(robustnesses, 0.70)
+
+    # # PLOT APPROX. ROBUSTNESS BAR CHART
     #
-    # pseudo_robustness_uniform = []
-    # pseudo_robustness_beta = []
-    # for sol_number in range(368):
-    #     print 'Calculating robustness for solution {}'.format(sol_number)
-    #
-    #     most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
-    #         logistic_regression(
-    #             group_objectives(objectives_by_solution[sol_number],
-    #                              ['max', 'min', 'min', 'min', 'min', 'min']),
-    #             rdm_factors, sol_number, performance_criteria#, plot=True
-    #         )
-    #
-    #     # Number of important uncertainty factors -- scenario discovery
-    #     n_factors = np.sum(np.sort(np.abs(lr_coef)) / np.sum(np.abs(lr_coef))
-    #                        > 0.1)
-    #     print n_factors
-    #
-    #     if sum(pass_fail) != 0:
-    #         r1 = calculate_pseudo_robustness_uniform(pass_fail)
-    #         r2 = calculate_pseudo_robustness_beta(
-    #             pass_fail,
-    #             non_crashed_rdm[:, most_influential_factors[-n_factors:]],
-    #             2.5,
-    #             lows[most_influential_factors[-n_factors:]],
-    #             highs[most_influential_factors[-n_factors:]],
-    #             means[most_influential_factors[-n_factors:]]#, plot=True
-    #         )
-    #     else:
-    #         r1, r2 = 0, 0
-    #
-    #     pseudo_robustness_uniform.append(r1)
-    #     pseudo_robustness_beta.append(r2)
-    #
-    # sorted_uniform = np.argsort(pseudo_robustness_uniform)[::-1]
-    # sorted_beta = np.argsort(pseudo_robustness_beta)[::-1]
-    # robustness = np.vstack((
-    #     sorted_uniform,
-    #     np.array(pseudo_robustness_uniform)[sorted_uniform],
-    #     sorted_beta,
-    #     np.array(pseudo_robustness_beta)[sorted_beta])
-    # )
-    #
-    # np.savetxt(files_root_directory + 'robustness.csv', robustness.T,
-    #            header='uniform rank, uniform, beta rank, beta',
-    #            delimiter=',')
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory)
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory, plot_du=False)
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory,
+    #                        highlight_sols=robust_for_all)
+
+    # influential_factors_plot(objectives_by_solution, non_crashed_by_solution,
+    #                          performance_criteria, files_root_directory,
+    #                          (0, 1, 4), rdm_factors)
+
+    most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
+    lr_coef_all = get_most_influential_rdm_factors(objectives_by_solution,
+                                                   non_crashed_by_solution,
+                                                   performance_criteria,
+                                                   files_root_directory,
+                                                   (0, 1, 4), rdm_factors,
+                                                   solutions=robust_for_all)
+
+    # print most_influential_factors_all
+    # print lr_coef_all
+
+    most_influential_factors_all_mod = np.array([[35, 1, 7, 0],
+                                                 [35, 5, 7, 0],
+                                                 [35, 5, 7, 0]])
+    important_factors_multiple_solutions_plot(most_influential_factors_all_mod,
+                                              lr_coef_all, 3,
+                                              create_labels_list(),
+                                              files_root_directory)
+
+    # for s, most_influential_factors in zip(robust_for_all,
+    #                                       most_influential_factors_all):
+
+    s = robust_for_all[0]
+    utility_to_plot = 1
+    realization_to_plot = 13
+    ninfra_mono = 5
+    ninfra = np.array([0, 6, 0, 4])[utility_to_plot]
+    name = np.array(['owasa', 'durham', 'cary', 'raleigh'])[utility_to_plot]
+
+    most_influential_factors = most_influential_factors_all[0]
+    rdm_max = np.argmax(rdm_factors[:, most_influential_factors[-1]])
+    rdm_min = np.argmin(rdm_factors[:, most_influential_factors[-1]])
+    rdm_mono = rdm_max
+
+    pathways_all = load_pathways_solution('F:/Dropbox/Bernardo/Research/'
+                                          'WaterPaths_results/'
+                                          're-evaluation_against_du/'
+                                          'Pathways/',
+                                          s, [rdm_max, rdm_min])
+    pathways_all_mono = load_pathways_solution('F:/Dropbox/Bernardo/Research/'
+                                          'WaterPaths_results/'
+                                          'rdm_results/',
+                                          s, [rdm_max])
+
+    # # SORT REALIATIONS BY INFLOWS, EVAPORATIONS AND DEMANDS. NOT FRUITFUL
+    # # PROBABLY BECAUSE OF THE COMPLEX SYSTEM DYNAMICS
+    # durham_inflows = np.sum(np.loadtxt('C:/Users/Bernardo/CLionProjects/'
+    #                                'WaterPaths/TestFiles/inflows/durham_inflows'
+    #                                '.csv', delimiter=','), axis=1)
+    # durham_evap = np.sum(np.loadtxt('C:/Users/Bernardo/CLionProjects/'
+    #                                'WaterPaths/TestFiles/evaporation/durham_evap'
+    #                                '.csv', delimiter=','), axis=1)
+    # durham_demand = np.sum(np.loadtxt('C:/Users/Bernardo/CLionProjects/'
+    #                                'WaterPaths/TestFiles/demands/durham_demand'
+    #                                '.csv', delimiter=','), axis=1)
+    # durham_inflows /= np.max(durham_inflows - np.min(durham_inflows))
+    # durham_evap /= np.max(np.abs(durham_evap) - np.min(np.abs(durham_evap)))
+    # durham_demand /= np.max(durham_demand - np.min(durham_demand))
+    # sort_pathways_by = ()#np.argsort(durham_inflows - durham_evap - durham_demand)
+
+    lt_rof_mono = np.loadtxt(files_root_directory +
+                            'Utilities_s{}_RDM{}_r{}.csv'
+                            .format(s, rdm_max, realization_to_plot),
+                            delimiter=',',
+                            skiprows=1)[:, 4 + utility_to_plot * 15]
+                            # skiprows=1)[:, [4 + utility_to_plot * 15, 13 + utility_to_plot * 15]]
+    # lt_rof_mono[:, 1] /= np.max(lt_rof_mono[:, 1]*4)
+
+    # Plot pathways
+    pathways_list_utility_high = \
+        get_pathways_by_utility_realization(pathways_all[0])
+    utility_pathways_high = pathways_list_utility_high[utility_to_plot]
+
+    # replace infrastructure id by construction order
+    construction_order = get_infra_order(utility_pathways_high)
+    utility_pathways_high_copy = \
+        convert_pathways_from_source_id_to_construction_id(utility_pathways_high,
+                                                           construction_order)
+
+    # plot_colormap_pathways(utility_pathways_high_copy, 2400, s, rdm_max,
+    #                        savefig_directory=files_root_directory + 'Figures/',
+    #                        nrealizations=1000,
+    #                        ninfra=ninfra, sources=sources,
+    #                        construction_order=construction_order,
+    #                        utility_name=name, year0=2015)
+    # plot_2d_pathways(utility_pathways_high_copy, 2400, s, rdm_max, sources,
+    #                  construction_order, ninfra=ninfra,
+    #                  savefig_directory=files_root_directory + 'Figures/',
+    #                  utility_name=name, year0=2015)
+    # plot_2d_pathways(utility_pathways_high_copy, 2400, s, rdm_max, sources,
+    #                  construction_order, ninfra=ninfra,
+    #                  savefig_directory=files_root_directory + 'Figures/',
+    #                  utility_name=name, year0=2015, monocromatic=True)
+
+
+
+    pathways_list_utility_low = \
+        get_pathways_by_utility_realization(pathways_all[1])
+    utility_pathways_low = pathways_list_utility_low[utility_to_plot]
+
+    # replace infrastructure id by construction order
+    utility_pathways_low_copy = \
+        convert_pathways_from_source_id_to_construction_id(utility_pathways_low,
+                                                           construction_order)
+
+    # plot_colormap_pathways(utility_pathways_low_copy, 2400, s, rdm_min,
+    #                        savefig_directory=files_root_directory + 'Figures/',
+    #                        nrealizations=1000,
+    #                        ninfra=ninfra, sources=sources,
+    #                        construction_order=construction_order,
+    #                        utility_name=name, year0=2015)
+    # plot_2d_pathways(utility_pathways_low_copy, 2400, s, rdm_min, sources,
+    #                  construction_order, ninfra=ninfra,
+    #                  savefig_directory=files_root_directory + 'Figures/',
+    #                  utility_name=name, year0=2015)
+    # plot_2d_pathways(utility_pathways_low_copy, 2400, s, rdm_min, sources,
+    #                  construction_order, ninfra=ninfra,
+    #                  savefig_directory=files_root_directory + 'Figures/',
+    #                  utility_name=name, year0=2015, monocromatic=True)
+
+
+
+    # Plot pathways
+    pathways_list_utility_mono = \
+        get_pathways_by_utility_realization(pathways_all_mono[0])
+    utility_pathways_mono = pathways_list_utility_mono[utility_to_plot]
+
+    # replace infrastructure id by construction order
+    construction_order_mono = get_infra_order(utility_pathways_mono)
+    utility_pathways_mono_copy = \
+        convert_pathways_from_source_id_to_construction_id(utility_pathways_mono,
+                                                           construction_order_mono)
+
+    # plot_2d_pathways([utility_pathways_mono_copy[13]], 2400, s, rdm_mono,
+    #                  sources, construction_order_mono, ninfra=ninfra_mono,
+    #                  savefig_directory=files_root_directory + 'Figures/',
+    #                  utility_name=name, year0=2015, monocromatic=True,
+    #                  lt_rof=lt_rof_mono)
+
+
+
+    # plot_pathways_id(utility_pathways_high, s, rdm_max, sources,
+    #                  construction_order, savefig_directory=files_root_directory,
+    #                  ninfra=ninfra, utility_name=name, year0=2015)
+    # plot_pathways_id(durham_pathways_low, s, rdm_min, sources,
+    #                  construction_order, savefig_directory=files_root_directory,
+    #                  sort_by=sort_pathways_by, ninfra=7, year0=2015)

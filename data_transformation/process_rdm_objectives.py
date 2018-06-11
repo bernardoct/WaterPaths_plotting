@@ -5,18 +5,21 @@ from functools import partial
 
 def create_labels_list():
     labels = [
-                 'Demand growth multiplier',
-                 'Bond interest rate multiplier',
-                 'Bond term multiplier',
-                 'Discount rate multiplier',
+                 'Demand growth\nmultiplier',
+                 'Bond interest\nrate multiplier',
+                 'Bond term\nmultiplier',
+                 'Discount rate\nmultiplier',
              ] + \
-             ['Restriction effectiveness multiplier'] * 4 + \
-             ['Evaporation rate multiplier']
+             ['Restriction effectiveness\nmultiplier OWASA',
+              'Restriction effectiveness\nmultiplier Durham',
+              'Restriction effectiveness\nmultiplier Cary',
+              'Restriction effectiveness\nmultiplier Raleigh'] + \
+             ['Evaporation rate\nmultiplier']
 
     infra_labels = [[
-        'Permitting time multiplier {}'.format(i),
-        'Construction cost multiplier {}'.format(i)
-    ] for i in range(25)]
+        'Permitting time\nmultiplier {}'.format(i),
+        'Construction cost\nmultiplier {}'.format(i)
+    ] for i in range(7, 25)]
 
     for il in infra_labels:
         labels += il
@@ -34,6 +37,7 @@ def read_rdm_file(files_root_directory, i):
 def to_objectives_by_solution(objectives_rdm, nsols, nobjs,
                               nutils, files_root_directory):
     objectives_by_solution = []
+    non_crashed_rdm_by_solution = []
     nobjs_per_utility = nobjs / nutils
     nrdm = len(objectives_rdm)
     jla = np.loadtxt(files_root_directory + 'combined_reference_sets.set',
@@ -57,9 +61,9 @@ def to_objectives_by_solution(objectives_rdm, nsols, nobjs,
             objectives_sol_jla[:, (nobjs_per_utility + 1) * (u + 1) - 1] \
                 = jla_sol[u]
 
-        # non_crashed_rdm = objectives_sol_jla[:, 0] < 1.1
-        #
-        # objectives_sol_jla = objectives_sol_jla[non_crashed_rdm]
+        non_crashed_rdm = objectives_sol_jla[:, 0] < 1.1
+
+        objectives_sol_jla = objectives_sol_jla[non_crashed_rdm]
 
         np.save(files_root_directory + 'Objectives_by_solution/'
                                        'Objectives_s{}.npy'.format(s),
@@ -67,20 +71,28 @@ def to_objectives_by_solution(objectives_rdm, nsols, nobjs,
         np.savetxt(files_root_directory + 'Objectives_by_solution/'
                                           'Objectives_s{}.csv'.format(s),
                    objectives_sol_jla, delimiter=',')
+        np.save(files_root_directory + 'Objectives_by_solution/'
+                                       'Non_crashed_s{}.npy'.format(s),
+                non_crashed_rdm)
 
         objectives_by_solution.append(objectives_sol_jla)
+        non_crashed_rdm_by_solution.append(non_crashed_rdm)
 
-    return objectives_by_solution
+    return objectives_by_solution, non_crashed_rdm_by_solution
 
 
 def load_objs_by_solution(files_root_directory, nsols):
     objectives_by_solution = []
-    for i in range(nsols):
+    non_crashed_by_solution = []
+    for s in range(nsols):
         objs = np.load(files_root_directory + 'Objectives_by_solution/'
-                                              'Objectives_s{}.npy'.format(i))
+                                              'Objectives_s{}.npy'.format(s))
         objectives_by_solution.append(objs)
+        non_crashed = np.load(files_root_directory + 'Objectives_by_solution/'
+                                       'Non_crashed_s{}.npy'.format(s))
+        non_crashed_by_solution.append(non_crashed)
 
-    return objectives_by_solution
+    return objectives_by_solution, non_crashed_by_solution
 
 
 def load_objectives(files_root_directory, nsols, n_rdm_scenarios,
@@ -122,11 +134,14 @@ def load_on_du_objectives(files_root_directory, on):
     indexing = np.insert(indexing, 5, 20)
     indexing = np.insert(indexing, 11, 21)
     indexing = np.insert(indexing, 17, 22)
+    objectives_w_jla = objectives[:, indexing]
 
-    return objectives[:, indexing]
+    non_failed = objectives[:, 0] < 1.1
+
+    return objectives_w_jla[non_failed]
 
 
-def back_calculate_objectives(objectives_by_solution, nobjs, nutils):
+def back_calculate_objectives(objectives_by_solution, nobjs, nutils, jla_obj=(5, 11, 17, 23)):
     nsols = len(objectives_by_solution)
     objectives = np.zeros((nsols, nobjs * nutils))
     for s in range(nsols):
@@ -137,19 +152,41 @@ def back_calculate_objectives(objectives_by_solution, nobjs, nutils):
                                       [:, (u + 1) * nobjs - 1])[-nrdms / 100]
             objectives[s, (u + 1) * nobjs - 1] = worse_case_cost
 
+        sum_jla = sum(objectives[s, jla_obj])
+        if sum_jla > 1.:
+            objectives[s, jla_obj] /= sum_jla
+
     return objectives
 
 
-def load_pathways_solution(files_root_directory, s, n_rdms):
+def load_pathways_solution(files_root_directory, s, rdms):
     pathways = []
-    for rdm in range(n_rdms):
+    for rdm in rdms:
         pathways.append(
             np.loadtxt(
                 files_root_directory
-                + 'Pathways/Pathways_s{}_RDM{}.out'.format(s, rdm),
+                # + 'Pathways/Pathways_s{}_RDM{}.out'.format(s, rdm),
+                + 'Pathways_s{}_RDM{}.out'.format(s, rdm),
                 delimiter='\t',
                 comments='R',
                 dtype=int)
         )
 
     return pathways
+
+
+def group_objectives(objectives, max_min):
+    nsols = len(objectives)
+    nobjs_total = objectives.shape[1]
+    nobjs = len(max_min)
+    grouped_objs = np.zeros((nsols, len(max_min)))
+    for i in range(nobjs):
+        objs = range(i, nobjs_total, nobjs)
+        if max_min[i] == 'min':
+            grouped_objs[:, i] = np.max(objectives[:, objs], axis=1)
+        elif max_min[i] == 'max':
+            grouped_objs[:, i] = np.min(objectives[:, objs], axis=1)
+        else:
+            raise Exception('You must specify either \'max\' or \'min\'')
+
+    return grouped_objs

@@ -15,6 +15,7 @@ def logistic_regression(objectives_by_solution, rdm_factors, sol_number,
     non_crashed_sols = objectives_by_solution[:, 0] != CRASHED_OBJ_VALUE
     objectives_by_solution = objectives_by_solution[non_crashed_sols]
     nobjs = len(performance_criteria)
+    nrdms = rdm_factors.shape[1]
 
     # Label solutions as pass and fail
     pass_fail = objectives_by_solution[:, 0] > performance_criteria[0]
@@ -22,7 +23,7 @@ def logistic_regression(objectives_by_solution, rdm_factors, sol_number,
         pass_fail *= (objectives_by_solution[:, i] < performance_criteria[i])
     pass_fail = pass_fail == True
 
-    if sum(pass_fail != 0):
+    if len(np.unique(pass_fail)) == 2:
         # print 'There were {} rdm re-evaluations that did not crash of which {} ' \
         #       'met performance criteria'.format(sum(non_crashed_sols),
         #                                         sum(pass_fail))
@@ -39,9 +40,10 @@ def logistic_regression(objectives_by_solution, rdm_factors, sol_number,
         if plot:
             logistic_regression_plot(most_influential_factors, pass_fail,
                                      non_crashed_rdm, sol_number)
-        return most_influential_factors, pass_fail, non_crashed_rdm, lr.coef_
+        return most_influential_factors, pass_fail, non_crashed_rdm, lr.coef_[0]
     else:
-        return [-1], pass_fail, [-1], [-1]
+        return -np.ones(nrdms, dtype=int), pass_fail, \
+               [False] * nrdms, np.zeros(nrdms)
 
 
 

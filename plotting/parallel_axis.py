@@ -3,7 +3,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from matplotlib import colorbar
 from copy import deepcopy
-
+plt.rcParams['svg.fonttype'] = 'none'
 
 def __basic_plot_formatting(ax):
     ax.spines['top'].set_visible(False)
@@ -46,7 +46,7 @@ def __invert_axis(datasets_mod, n_columns_datasets, invert_axis, axis_ranges,
     return invert
 
 
-def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=0.5):
+def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=1.):
     n_points = len(dataset)
     alphas = np.ones(n_points, dtype=float) * base_alpha
 
@@ -63,7 +63,7 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=0.5):
 
 def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
                     color_column, x_axis, brush_criteria=dict(),
-                    base_alpha=0.5):
+                    base_alpha=0.5, lw=1.):
 
     # Plot data sets
     for dataset, cmap in zip(datasets_mod, color_maps):
@@ -76,13 +76,13 @@ def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
 
         # Plot data
         for d, dc, a in zip(dataset_normed, dataset_color_values, alphas):
-            ax.plot(x_axis, d[columns], c=cmap(dc[color_column]), alpha=a)
+            ax.plot(x_axis, d[columns], c=cmap(dc[color_column]), alpha=a, lw=lw)
 
 
 def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
-                    invert, labels, fontname_body):
+                    invert, labels, fontname_body, fig):
     n_datasets = len(datasets)
-    axis = []
+    cmap_axis = []
     for cmap, name, i in zip(color_maps, dataset_names, range(n_datasets)):
         # Set color bar auxiliary variables
         orientation = 'horizontal'
@@ -97,45 +97,63 @@ def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
         cax, _ = colorbar.make_axes(ax, orientation=orientation, aspect=60)
         cbar = colorbar.ColorbarBase(cax, cmap=cmap_mod, norm=normalize,
                                      orientation=orientation)
-        axis.append(cax)
+        cmap_axis.append(cax)
 
         # Set color bar font
-        cbar.set_label('{} {}'.format(name if len(dataset_names) > 1
-                                      else dataset_names, labels[color_column]),
+        cbar.set_label('{} - {}'.format(name, labels[color_column]),
                        **{'family': fontname_body})
 
         cbar.set_ticks([vmin, vmax])
-        cbar.set_ticklabels(['{0:.3g}'.format(vmin), '{0:.3g}'.format(vmax)])
+        cbar.set_ticklabels(['{0:.2g}'.format(vmin), '{0:.2g}'.format(vmax)])
 
         for l in cax.xaxis.get_ticklabels():
             l.set_family(fontname_body)
 
     # Set color bars positions
-    width_cbar = (0.8 - 0.05 * (n_datasets - 1)) / n_datasets
-    ax.set_position([0.05, 0.17, 0.9, 0.65])
+    size = fig.get_size_inches()
+    axis_height = fig.get_size_inches()[1] * ax.get_position().height
+    base_height = 0.65 * 5.
+
+    cbar_height = 0.6 / size[1]
+    title_height = 1.12 / size[1]
+    spacing = 0.08
+    base_width = 0.8
+    width_cbar = (base_width - spacing * (n_datasets - 1)) / n_datasets
+    ax.set_position([0.05, cbar_height + 0.07 * 5. / size[1], 0.9,
+                     1. - cbar_height - title_height])
     for i in range(n_datasets):
-        axis[i].set_position([0.1 + (width_cbar + 0.05) * i,
-                              0., width_cbar, 0.1])
+        cmap_axis[i].set_position(
+            [0.1 + (width_cbar + spacing * (n_datasets - 1)) * i,
+             0., width_cbar, cbar_height])
+
+    return cmap_axis
 
 
-def __set_numbers_labels_axis(ax, data_min, data_max, columns, invert, labels,
-                              x_axis, plot_font):
+def __set_numbers_labels_axis(ax, fig, data_min, data_max, columns, invert,
+                              labels, x_axis, plot_font):
+
+    axis_height = fig.get_size_inches()[1] * ax.get_position().height
+    base_height = 0.65 * 5.
+
     for x in x_axis:
-        ax.text(x, -0.07, '{0:.2g}'.format(invert[columns[x]] * data_min[columns][x]),
+        ax.text(x, -0.07 * base_height / axis_height,
+                '{0:.2g}'.format(invert[columns[x]] * data_min[columns][x]),
                 horizontalalignment='center', **plot_font)
-        ax.text(x, 1.03, '{0:.2g}'.format(invert[columns[x]] * data_max[columns][x]),
+        ax.text(x, 1. + 0.03 * base_height / axis_height,
+                '{0:.2g}'.format(invert[columns[x]] * data_max[columns][x]),
                 horizontalalignment='center', **plot_font)
-        ax.text(x, 1.09, np.array(labels)[columns][x],
-                horizontalalignment='center', **plot_font)
+        ax.text(x, 1. + 0.09 * base_height / axis_height,
+                np.array(labels)[columns][x], horizontalalignment='center',
+                **plot_font)
         ax.plot((x, x), (-0.02, 1.02),
                 c='black', alpha=0.3, lw=0.2)
 
 
-def paxis_plot(datasets, columns, color_column, color_maps,
-               axis_labels, title, dataset_names, axis_ranges=(),
-               fontname_title='Gill Sans MT',
-               fontname_body='CMU Bright', file_name='',
-               size=(9, 6), axis_to_invert=(), brush_criteria=dict()):
+def parallel_axis(datasets, columns, color_column, color_maps,
+                  axis_labels, title, dataset_names, axis_ranges=(),
+                  fontname_title='Gill Sans MT',
+                  fontname_body='CMU Bright', file_name='',
+                  size=(9, 6), axis_to_invert=(), brush_criteria=dict(), lw=1.):
 
     datasets_mod = deepcopy(datasets)
     axis_ranges = np.array(axis_ranges)
@@ -155,8 +173,8 @@ def paxis_plot(datasets, columns, color_column, color_maps,
     plot_font_title = {'fontname': fontname_title, 'fontsize': 16}
 
     # Set title
-    fig, ax = plt.subplots()
-    fig.set_size_inches(size, forward=True)
+    fig, ax = plt.subplots(figsize=size)
+    # fig.set_size_inches(size, forward=True)
     fig.suptitle(title, **plot_font_title)
 
     # Remove axis and ticks
@@ -168,14 +186,15 @@ def paxis_plot(datasets, columns, color_column, color_maps,
 
     # Plot Datasets
     __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
-                    color_column, x_axis, brush_criteria=brush_criteria)
+                    color_column, x_axis, brush_criteria=brush_criteria, lw=lw)
 
     # Add color bars
-    __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
-                    invert, axis_labels, fontname_body)
+    cbar_axis = __add_color_bar(datasets, ax, dataset_names, color_maps,
+                                color_column, invert, axis_labels,
+                                fontname_body, fig)
 
     # Set numbers, axis labels, and axis spines
-    __set_numbers_labels_axis(ax, data_min, data_max, columns, invert,
+    __set_numbers_labels_axis(ax, fig, data_min, data_max, columns, invert,
                               axis_labels, x_axis, plot_font)
 
     # Save file or display plot
