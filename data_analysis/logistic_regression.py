@@ -1,15 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from sklearn.ensemble import GradientBoostingClassifier
+
 from data_transformation.process_rdm_objectives import create_labels_list
 from sklearn.linear_model import LogisticRegression
 
 CRASHED_OBJ_VALUE = 10000
 
 
-def logistic_regression(objectives_by_solution, rdm_factors, sol_number,
-                        performance_criteria, plot=False):
-    # print 'Running logistic regression on solution {}'.format(sol_number)
+def prepare_data_for_classification(objectives_by_solution, rdm_factors,
+                                       performance_criteria):
 
     # Load one solution and check which RDM re-evaluations did not crash
     non_crashed_sols = objectives_by_solution[:, 0] != CRASHED_OBJ_VALUE
@@ -23,14 +24,19 @@ def logistic_regression(objectives_by_solution, rdm_factors, sol_number,
         pass_fail *= (objectives_by_solution[:, i] < performance_criteria[i])
     pass_fail = pass_fail == True
 
+    non_crashed_rdm = rdm_factors[non_crashed_sols]
+
+    return non_crashed_rdm, pass_fail, nrdms
+
+
+def logistic_regression_classification(objectives_by_solution, rdm_factors, sol_number,
+                                       performance_criteria, plot=False):
+
+    non_crashed_rdm, pass_fail, nrdms = prepare_data_for_classification(objectives_by_solution, rdm_factors,
+                                                                        performance_criteria)
+
     if len(np.unique(pass_fail)) == 2:
-        # print 'There were {} rdm re-evaluations that did not crash of which {} ' \
-        #       'met performance criteria'.format(sum(non_crashed_sols),
-        #                                         sum(pass_fail))
-        #
-        # # Perform logistic regression on rdm factors and pass/fail labels
-        # print 'Running logistic regression'
-        non_crashed_rdm = rdm_factors[non_crashed_sols]
+        # Perform logistic regression on rdm factors and pass/fail labels
         lr = LogisticRegression()
         lr.fit(non_crashed_rdm, pass_fail)
 
@@ -46,6 +52,27 @@ def logistic_regression(objectives_by_solution, rdm_factors, sol_number,
                [False] * nrdms, np.zeros(nrdms)
 
 
+def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number,
+                                 performance_criteria, plot=False):
+
+    non_crashed_rdm, pass_fail, nrdms = prepare_data_for_classification(objectives_by_solution, rdm_factors,
+                                                                        performance_criteria)
+
+    if len(np.unique(pass_fail)) == 2:
+        # Perform logistic regression on rdm factors and pass/fail labels
+        gbc = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=2)
+        gbc.fit(non_crashed_rdm, pass_fail)
+
+        # get most influential pair of factors
+        most_influential_factors = np.argsort(gbc.feature_importances_)
+
+        if plot:
+            logistic_regression_plot(most_influential_factors, pass_fail,
+                                     non_crashed_rdm, sol_number)
+        return most_influential_factors, pass_fail, non_crashed_rdm, gbc.feature_importances_
+    else:
+        return -np.ones(nrdms, dtype=int), pass_fail, \
+               [False] * nrdms, np.zeros(nrdms)
 
 
 def logistic_regression_plot(most_influential_factors, pass_fail,

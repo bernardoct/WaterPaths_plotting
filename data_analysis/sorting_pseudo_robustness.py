@@ -3,10 +3,9 @@ import matplotlib.pyplot as plt
 from scipy.stats import beta
 from matplotlib import cm
 
-from data_analysis.logistic_regression import logistic_regression
+from data_analysis.logistic_regression import logistic_regression_classification, boosted_trees_classification
 from data_transformation.process_rdm_objectives import group_objectives, \
     create_labels_list
-
 
 def calculate_pseudo_robustness_uniform(pass_fail):
     return 1.* sum(pass_fail * 1) / len(pass_fail)
@@ -57,10 +56,10 @@ def calculate_pseudo_robustness_beta(pass_fail, rdm_factors, base_parameter,
     return pseudo_robustness / len(means)
 
 
-def get_most_influential_rdm_factors(objectives_by_solution, non_crashed_by_solution,
-                                performance_criteria, files_root_directory,
-                                apply_criteria_on_objs, rdm_factors,
-                                not_group_objectives=False, solutions=()):
+def get_most_influential_rdm_factors_logistic_regression(objectives_by_solution, non_crashed_by_solution,
+                                                         performance_criteria, files_root_directory,
+                                                         apply_criteria_on_objs, rdm_factors,
+                                                         not_group_objectives=False, solutions=()):
 
     nsols = len(objectives_by_solution)
     if len(solutions) == 0:
@@ -86,7 +85,52 @@ def get_most_influential_rdm_factors(objectives_by_solution, non_crashed_by_solu
         objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
 
         most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
-            logistic_regression(
+            logistic_regression_classification(
+                objectives_normalized,
+                rdm_factors[non_crashed_by_solution[sol_number]],
+                sol_number, performance_criteria,
+                plot=False
+            )
+
+        most_influential_factors_all.append(most_influential_factors)
+        pass_fail_all.append(pass_fail)
+        non_crashed_rdm_all.append(non_crashed_rdm)
+        lr_coef_all.append(lr_coef)
+
+    return most_influential_factors_all, pass_fail_all, \
+           non_crashed_rdm_all, lr_coef_all
+
+
+def get_most_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashed_by_solution,
+                                                   performance_criteria, files_root_directory,
+                                                   apply_criteria_on_objs, rdm_factors,
+                                                   not_group_objectives=False, solutions=()):
+
+    nsols = len(objectives_by_solution)
+    if len(solutions) == 0:
+        solutions = range(nsols)
+
+    most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
+    lr_coef_all = [], [], [], []
+
+    for sol_number in solutions:
+        # Load RDM files in a single table
+
+        print 'Performing scenario discovery for solution {}'.format(sol_number)
+
+        if not_group_objectives:
+            objectives = objectives_by_solution[sol_number][:, apply_criteria_on_objs]
+        else:
+            objectives = group_objectives(
+                        objectives_by_solution[sol_number],
+                        ['max', 'min', 'min', 'min',
+                         'min', 'min']
+                    )[:, apply_criteria_on_objs]
+
+        objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
+
+        most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
+            boosted_trees_classification(
                 objectives_normalized,
                 rdm_factors[non_crashed_by_solution[sol_number]],
                 sol_number, performance_criteria,
@@ -107,12 +151,12 @@ def influential_factors_plot(objectives_by_solution, non_crashed_by_solution,
                                 apply_criteria_on_objs, rdm_factors):
     most_influential_factors_all, pass_fail_all, \
     non_crashed_rdm_all, lr_coef_all = \
-        get_most_influential_rdm_factors(objectives_by_solution,
-                                         non_crashed_by_solution,
-                                         performance_criteria,
-                                         files_root_directory,
-                                         apply_criteria_on_objs,
-                                         rdm_factors)
+        get_most_influential_rdm_factors_logistic_regression(objectives_by_solution,
+                                                             non_crashed_by_solution,
+                                                             performance_criteria,
+                                                             files_root_directory,
+                                                             apply_criteria_on_objs,
+                                                             rdm_factors)
 
     all_pass = []
     plot = []
@@ -160,13 +204,13 @@ def calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
 
     most_influential_factors_all, pass_fail_all, \
     non_crashed_rdm_all, lr_coef_all = \
-        get_most_influential_rdm_factors(objectives_by_solution,
-                                         non_crashed_by_solution,
-                                         performance_criteria,
-                                         files_root_directory,
-                                         apply_criteria_on_objs,
-                                         rdm_factors,
-                                         not_group_objectives=
+        get_most_influential_rdm_factors_logistic_regression(objectives_by_solution,
+                                                             non_crashed_by_solution,
+                                                             performance_criteria,
+                                                             files_root_directory,
+                                                             apply_criteria_on_objs,
+                                                             rdm_factors,
+                                                             not_group_objectives=
                                          not_group_objectives)
 
     for most_influential_factors, pass_fail, non_crashed_rdm, lr_coef in \
@@ -273,7 +317,7 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
     plt.show()
 
 
-def get_most_robust_solutions_all_utilities(robustnesses, percentile):
+def get_robust_compromise_solutions(robustnesses, percentile):
     ix = int(len(robustnesses[0]) * percentile)
     percentile_sols = np.array([r[0, 1] * percentile for r in robustnesses])
     robustnesses_uniform = np.array([np.array(
@@ -324,5 +368,5 @@ def important_factors_multiple_solutions_plot(most_influential_factors_all,
         axis.set_title('Compromise\nSolution {}'.format(s + 1),
                        **{'fontname': title_font, 'size': 15})
 
-    plt.savefig(files_root_directory + 'important_factors.svg')
+    # plt.savefig(files_root_directory + 'important_factors.svg')
     plt.show()

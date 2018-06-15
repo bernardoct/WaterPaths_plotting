@@ -1,17 +1,17 @@
 from matplotlib.colors import LinearSegmentedColormap
 
-from data_analysis.logistic_regression import logistic_regression
+from data_analysis.logistic_regression import logistic_regression_classification
 from data_analysis.sorting_pseudo_robustness import \
     calculate_pseudo_robustness_uniform, calculate_pseudo_robustness_beta, \
     calculate_pseudo_robustness, pseudo_robustness_plot, \
-    influential_factors_plot, get_most_robust_solutions_all_utilities, \
-    get_most_influential_rdm_factors, important_factors_multiple_solutions_plot
+    influential_factors_plot, get_robust_compromise_solutions, \
+    get_most_influential_rdm_factors_logistic_regression, important_factors_multiple_solutions_plot, \
+    get_most_influential_rdm_factors_boosted_trees
 from data_transformation.process_rdm_objectives import *
 from generate_rdm_samples.generate_samples_uniform import trend
 from plotting.parallel_axis import __calculate_alphas
 from plotting.pathways_plotting import *
 from plotting.parallel_axis import *
-
 
 bu_cy = LinearSegmentedColormap.from_list('BuCy', [(0, 0, 1), (0, 1, 1)])
 bu_cy_r = bu_cy.reversed()
@@ -29,38 +29,20 @@ light_greys_hc = LinearSegmentedColormap.from_list('Light_greys_hc', light_greys
 cmaps = [oranges_hc, blues_hc]
 
 
-def plot_paxis_demo():
-    parallel_axis([np.array([[0.99, 0.4, 1e2, 0.3, 0.1, 0.3],
-                             [0.99, 0.4, 1e2, 0.3, 0.1, 0.3]])],
-                  columns_to_plot,
-                  color_column,
-                  [cmaps[0]],
-                  axis_labels,
-                  'Demo Parallel Axis Plot',
-                  ['Some optimization'],
-                  axis_ranges=ranges_all,
-                  file_name=files_root_directory + 'demo_paxis1.svg',
-                  axis_to_invert=[0],
-                  size=(9, 3),
-                  lw=2.
-                  )
-    parallel_axis([np.array([[0.99, 0.4, 1e2, 0.3, 0.1, 0.3],
-                          [0.9, 0.05, 4e2, 0.4, 0.3, 0.5]])],
-                  columns_to_plot,
-                  color_column,
-                  [cmaps[0]],
-                  axis_labels,
-                  'Demo Parallel Axis Plot',
-                  [dataset_names[1]],
-                  axis_ranges=ranges_all,
-                  file_name=files_root_directory + 'demo_paxis1.svg',
-                  axis_to_invert=[0],
-                  size=(9, 3),
-                  lw=2.
-                  )
+def plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped, objective_rdm_grouped, axis_labels,
+                   dataset_names, files_root_directory):
+    columns_to_plot = range(6)
+    color_column = 0
 
+    # Calculate ranges
+    all_to_plot = np.vstack((objective_rdm_grouped,
+                             objective_on_wcu_grouped,
+                             objective_on_du_grouped))
+    # ranges_all = np.vstack((all_to_plot.min(axis=0),
+    #                         all_to_plot.max(axis=0))).T
+    ranges_all = np.array([[0.85, 0., 77, 0., 0., 0.25],
+                           [1., 0.6, 720, 0.6, 0.4, 0.6]]).T
 
-def plot_all_paxis():
     # parallel_axis([objective_on_du_grouped[249:]],
     #               columns_to_plot,
     #               color_column,
@@ -327,7 +309,7 @@ if __name__ == '__main__':
     # of matrixes)
     objectives_by_solution, non_crashed_by_solution = \
         load_objectives(files_root_directory, n_solutions, n_rdm_scenarios,
-                        n_objectives, n_utilities)#, processed=False)
+                        n_objectives, n_utilities)  # , processed=False)
 
     # Back-calculate objectives for each solution as if objectives had been
     # calculated with 1,000 * 2,000 = 2e6 fully specified worlds.
@@ -338,15 +320,10 @@ if __name__ == '__main__':
     # Load objectives on either DU or WCU space, as they came out of Borg
     objective_on_wcu = load_on_du_objectives(files_root_directory, on='wcu')
     objective_on_du = load_on_du_objectives(files_root_directory, on='du')
-
-    ranges = [[0.8, 1], [0, 0.4], [0, 800], [0, 0.5], [0, 0.3], [0, 1.0]] * 4
     axis_labels = ['Reliability', 'Restriction\nFrequency',
                    'Infrastructure Net\nPresent Value', 'Financial Cost',
                    'Financial\nRisk', 'Jordan Lake\nAllocation'] * n_utilities
     dataset_names = ('WCU Optimization', 'DU Optimization')
-
-    columns_to_plot = range(6)
-    color_column = 0
 
     # Three different brushing criteria relaxing reliability
     brush_criteria1 = {0: [0.99, 1.0], 1: [0.0, 0.2], 4: [0.0, 0.10]}
@@ -358,16 +335,21 @@ if __name__ == '__main__':
                                              ['max', 'min', 'min', 'min', 'min',
                                               'min'])
     objective_on_wcu_grouped = group_objectives(objective_on_wcu,
-                                             ['max', 'min', 'min', 'min', 'min',
-                                              'min'])
+                                                ['max', 'min', 'min', 'min', 'min',
+                                                 'min'])
+
     #       Get rid of two really low reliability solutions that are shifting
     #       the blue and making all lines look dark except the corresponding few.
-    objective_on_wcu_grouped = objective_on_wcu_grouped[
-        objective_on_wcu_grouped[:, 0] > 0.92]
+    # objective_on_wcu_grouped = objective_on_wcu_grouped[
+    #     objective_on_wcu_grouped[:, 0] > 0.92]
 
     objective_on_du_grouped = group_objectives(objective_on_du,
                                                ['max', 'min', 'min', 'min',
-                                               'min', 'min'])
+                                                'min', 'min'])
+
+    # # Plot all parallel axis plots
+    # plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped, objective_rdm_grouped, axis_labels,
+    #                dataset_names, files_root_directory)
 
     rdm_utilities = np.loadtxt(files_root_directory
                                + 'rdm_utilities_reeval.csv',
@@ -381,25 +363,7 @@ if __name__ == '__main__':
 
     rdm_factors = np.hstack((rdm_utilities, rdm_dmp, rdm_water_sources))
     rdm_inflows = np.loadtxt(files_root_directory
-                               + 'rdm_inflows.csv')
-
-    # Calculate ranges
-    all_to_plot = np.vstack((objective_rdm_grouped,
-                             objective_on_wcu_grouped,
-                             objective_on_du_grouped))
-    ranges_all = np.vstack((all_to_plot.min(axis=0),
-                            all_to_plot.max(axis=0))).T
-    ranges_all = np.array([[0.85, 0., 77, 0., 0., 0.25],
-                           [1., 0.6, 720, 0.6, 0.4, 0.6]]).T
-
-    # cmap_wcu = bu_cy_r
-    # cmap_du = cm.get_cmap('autumn_r')
-    # cmap_wcu = bu_cy
-    # cmap_du = cm.get_cmap('autumn')
-
-    # # Plot all parallel axis plots
-    # plot_all_paxis()
-    # plot_paxis_demo()
+                             + 'rdm_inflows.csv')
 
     # Retrieve solutions that met brushing criteria
     alphas = __calculate_alphas(objective_rdm_grouped, brush_criteria1,
@@ -425,16 +389,15 @@ if __name__ == '__main__':
     #                             (18, 19, 22), 'Raleigh', rdm_factors,
     #                             not_group_objectives=True)
 
-    utilities = ['OWASA', 'Durham', 'Cary', 'Raleigh']
     robustnesses = []
-    for utility in utilities:
+    for utility in ['OWASA', 'Durham', 'Cary', 'Raleigh']:
         robustnesses.append(
             np.loadtxt(files_root_directory + 'robustness_{}.csv'
                        .format(utility), delimiter=',')
         )
 
     robust_for_all, robustnesses_ordered_by_sol_id = \
-        get_most_robust_solutions_all_utilities(robustnesses, 0.70)
+        get_robust_compromise_solutions(robustnesses, 0.70)
 
     # # PLOT APPROX. ROBUSTNESS BAR CHART
     #
@@ -453,25 +416,28 @@ if __name__ == '__main__':
     #                          performance_criteria, files_root_directory,
     #                          (0, 1, 4), rdm_factors)
 
+    # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
+    # lr_coef_all = get_most_influential_rdm_factors_logistic_regression(objectives_by_solution,
+    #                                                                    non_crashed_by_solution,
+    #                                                                    performance_criteria,
+    #                                                                    files_root_directory,
+    #                                                                    (0, 1, 4), rdm_factors,
+    #                                                                    solutions=robust_for_all)
     most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
-    lr_coef_all = get_most_influential_rdm_factors(objectives_by_solution,
-                                                   non_crashed_by_solution,
-                                                   performance_criteria,
-                                                   files_root_directory,
-                                                   (0, 1, 4), rdm_factors,
-                                                   solutions=robust_for_all)
+    lr_coef_all = get_most_influential_rdm_factors_boosted_trees(objectives_by_solution,
+                                                                 non_crashed_by_solution,
+                                                                 performance_criteria,
+                                                                 files_root_directory,
+                                                                 (0, 1, 4), rdm_factors,
+                                                                 solutions=robust_for_all)
 
-    # print most_influential_factors_all
-    # print lr_coef_all
-
-    most_influential_factors_all_mod = np.array([[35, 1, 7, 0],
-                                                 [35, 5, 7, 0],
-                                                 [35, 5, 7, 0]])
-    important_factors_multiple_solutions_plot(most_influential_factors_all_mod,
+    # most_influential_factors_all_mod = np.array([[35, 1, 7, 0],
+    #                                              [35, 5, 7, 0],
+    #                                              [35, 5, 7, 0]])
+    important_factors_multiple_solutions_plot(most_influential_factors_all,
                                               lr_coef_all, 3,
                                               create_labels_list(),
                                               files_root_directory)
-
 
     s = robust_for_all[0]
     utility_to_plot = 1
@@ -488,7 +454,7 @@ if __name__ == '__main__':
     pathways_all = load_pathways_solution(files_root_directory,
                                           s, [rdm_max, rdm_min])
     pathways_all_mono = load_pathways_solution(files_root_directory,
-                                          s, [rdm_max])
+                                               s, [rdm_max])
 
     # # SORT REALIATIONS BY INFLOWS, EVAPORATIONS AND DEMANDS. NOT FRUITFUL
     # # PROBABLY BECAUSE OF THE COMPLEX SYSTEM DYNAMICS
@@ -507,11 +473,11 @@ if __name__ == '__main__':
     # sort_pathways_by = ()#np.argsort(durham_inflows - durham_evap - durham_demand)
 
     lt_rof_mono = np.loadtxt(files_root_directory +
-                            'Utilities_s{}_RDM{}_r{}.csv'
-                            .format(s, rdm_max, realization_to_plot),
-                            delimiter=',',
-                            skiprows=1)[:, 4 + utility_to_plot * 15]
-                            # skiprows=1)[:, [4 + utility_to_plot * 15, 13 + utility_to_plot * 15]]
+                             'Utilities_s{}_RDM{}_r{}.csv'
+                             .format(s, rdm_max, realization_to_plot),
+                             delimiter=',',
+                             skiprows=1)[:, 4 + utility_to_plot * 15]
+    # skiprows=1)[:, [4 + utility_to_plot * 15, 13 + utility_to_plot * 15]]
     # lt_rof_mono[:, 1] /= np.max(lt_rof_mono[:, 1]*4)
 
     # Plot pathways
@@ -564,7 +530,6 @@ if __name__ == '__main__':
     #                  savefig_directory=files_root_directory + 'Figures/',
     #                  utility_name=name, year0=2015, monocromatic=True)
 
-
     # Plot pathways
     pathways_list_utility_mono = \
         get_pathways_by_utility_realization(pathways_all_mono[0])
@@ -581,7 +546,6 @@ if __name__ == '__main__':
     #                  savefig_directory=files_root_directory + 'Figures/',
     #                  utility_name=name, year0=2015, monocromatic=True,
     #                  lt_rof=lt_rof_mono)
-
 
     # plot_pathways_id(utility_pathways_high, s, rdm_max, sources,
     #                  construction_order, savefig_directory=files_root_directory,
