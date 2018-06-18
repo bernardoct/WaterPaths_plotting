@@ -56,10 +56,10 @@ def calculate_pseudo_robustness_beta(pass_fail, rdm_factors, base_parameter,
     return pseudo_robustness / len(means)
 
 
-def get_most_influential_rdm_factors_logistic_regression(objectives_by_solution, non_crashed_by_solution,
-                                                         performance_criteria, files_root_directory,
-                                                         apply_criteria_on_objs, rdm_factors,
-                                                         not_group_objectives=False, solutions=()):
+def get_influential_rdm_factors_logistic_regression(objectives_by_solution, non_crashed_by_solution,
+                                                    performance_criteria, files_root_directory,
+                                                    apply_criteria_on_objs, rdm_factors,
+                                                    not_group_objectives=False, solutions=()):
 
     nsols = len(objectives_by_solution)
     if len(solutions) == 0:
@@ -101,10 +101,11 @@ def get_most_influential_rdm_factors_logistic_regression(objectives_by_solution,
            non_crashed_rdm_all, lr_coef_all
 
 
-def get_most_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashed_by_solution,
-                                                   performance_criteria, files_root_directory,
-                                                   apply_criteria_on_objs, rdm_factors,
-                                                   not_group_objectives=False, solutions=()):
+def get_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashed_by_solution,
+                                              performance_criteria, files_root_directory,
+                                              apply_criteria_on_objs, rdm_factors,
+                                              not_group_objectives=False, solutions=(),
+                                              n_trees=100, tree_depth=2, plot=False):
 
     nsols = len(objectives_by_solution)
     if len(solutions) == 0:
@@ -134,7 +135,7 @@ def get_most_influential_rdm_factors_boosted_trees(objectives_by_solution, non_c
                 objectives_normalized,
                 rdm_factors[non_crashed_by_solution[sol_number]],
                 sol_number, performance_criteria,
-                plot=False
+                plot=plot, n_trees=n_trees, tree_depth=tree_depth
             )
 
         most_influential_factors_all.append(most_influential_factors)
@@ -151,12 +152,12 @@ def influential_factors_plot(objectives_by_solution, non_crashed_by_solution,
                                 apply_criteria_on_objs, rdm_factors):
     most_influential_factors_all, pass_fail_all, \
     non_crashed_rdm_all, lr_coef_all = \
-        get_most_influential_rdm_factors_logistic_regression(objectives_by_solution,
-                                                             non_crashed_by_solution,
-                                                             performance_criteria,
-                                                             files_root_directory,
-                                                             apply_criteria_on_objs,
-                                                             rdm_factors)
+        get_influential_rdm_factors_logistic_regression(objectives_by_solution,
+                                                        non_crashed_by_solution,
+                                                        performance_criteria,
+                                                        files_root_directory,
+                                                        apply_criteria_on_objs,
+                                                        rdm_factors)
 
     all_pass = []
     plot = []
@@ -204,13 +205,13 @@ def calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
 
     most_influential_factors_all, pass_fail_all, \
     non_crashed_rdm_all, lr_coef_all = \
-        get_most_influential_rdm_factors_logistic_regression(objectives_by_solution,
-                                                             non_crashed_by_solution,
-                                                             performance_criteria,
-                                                             files_root_directory,
-                                                             apply_criteria_on_objs,
-                                                             rdm_factors,
-                                                             not_group_objectives=
+        get_influential_rdm_factors_logistic_regression(objectives_by_solution,
+                                                        non_crashed_by_solution,
+                                                        performance_criteria,
+                                                        files_root_directory,
+                                                        apply_criteria_on_objs,
+                                                        rdm_factors,
+                                                        not_group_objectives=
                                          not_group_objectives)
 
     for most_influential_factors, pass_fail, non_crashed_rdm, lr_coef in \

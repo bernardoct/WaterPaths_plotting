@@ -53,14 +53,18 @@ def logistic_regression_classification(objectives_by_solution, rdm_factors, sol_
 
 
 def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number,
-                                 performance_criteria, plot=False):
+                                 performance_criteria, plot=False,
+                                 n_trees=100, tree_depth=3):
 
-    non_crashed_rdm, pass_fail, nrdms = prepare_data_for_classification(objectives_by_solution, rdm_factors,
-                                                                        performance_criteria)
+    non_crashed_rdm, pass_fail, nrdms = \
+        prepare_data_for_classification(objectives_by_solution, rdm_factors,
+                                        performance_criteria)
 
     if len(np.unique(pass_fail)) == 2:
         # Perform logistic regression on rdm factors and pass/fail labels
-        gbc = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=2)
+        gbc = GradientBoostingClassifier(n_estimators=n_trees,
+                                         learning_rate=0.1,
+                                         max_depth=tree_depth)
         gbc.fit(non_crashed_rdm, pass_fail)
 
         # get most influential pair of factors
@@ -68,7 +72,7 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number
 
         if plot:
             logistic_regression_plot(most_influential_factors, pass_fail,
-                                     non_crashed_rdm, sol_number)
+                                     non_crashed_rdm, sol_number, gbc)
         return most_influential_factors, pass_fail, non_crashed_rdm, gbc.feature_importances_
     else:
         return -np.ones(nrdms, dtype=int), pass_fail, \
@@ -76,7 +80,7 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number
 
 
 def logistic_regression_plot(most_influential_factors, pass_fail,
-                             non_crashed_rdm, sol_number,
+                             non_crashed_rdm, sol_number, classifier,
                              cmap=cm.get_cmap('coolwarm'), from_middle=0.35):
     most_influential_pair = most_influential_factors[-2:]
 
@@ -102,5 +106,17 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.85, box.height])
+
+    # x_min, x_max = ax.get_xlim()
+    # y_min, y_max = ax.get_ylim()
+    #
+    # xx, yy = np.meshgrid(np.arange(x_min, x_max, (x_max - x_min) / 100),
+    #                      np.arange(y_min, y_max, (y_max - y_min) / 100))
+
+    z = classifier.predict_proba(non_crashed_rdm)[:, 1]
+    z = z.reshape((len(non_crashed_rdm), len(non_crashed_rdm)))
+    ax.contourf(non_crashed_rdm[:, most_influential_pair[0]],
+                non_crashed_rdm[:, most_influential_pair[1]],
+                z, cmap=cmap, alpha=.8)
 
     plt.show()

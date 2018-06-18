@@ -5,8 +5,8 @@ from data_analysis.sorting_pseudo_robustness import \
     calculate_pseudo_robustness_uniform, calculate_pseudo_robustness_beta, \
     calculate_pseudo_robustness, pseudo_robustness_plot, \
     influential_factors_plot, get_robust_compromise_solutions, \
-    get_most_influential_rdm_factors_logistic_regression, important_factors_multiple_solutions_plot, \
-    get_most_influential_rdm_factors_boosted_trees
+    get_influential_rdm_factors_logistic_regression, important_factors_multiple_solutions_plot, \
+    get_influential_rdm_factors_boosted_trees
 from data_transformation.process_rdm_objectives import *
 from generate_rdm_samples.generate_samples_uniform import trend
 from plotting.parallel_axis import __calculate_alphas
@@ -269,10 +269,10 @@ def plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped, objective_
 
 
 if __name__ == '__main__':
-    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-    #                        'rdm_results/'
-    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
                            'rdm_results/'
+    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    #                        'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -424,18 +424,19 @@ if __name__ == '__main__':
     #                                                                    (0, 1, 4), rdm_factors,
     #                                                                    solutions=robust_for_all)
     most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
-    lr_coef_all = get_most_influential_rdm_factors_boosted_trees(objectives_by_solution,
-                                                                 non_crashed_by_solution,
-                                                                 performance_criteria,
-                                                                 files_root_directory,
-                                                                 (0, 1, 4), rdm_factors,
-                                                                 solutions=robust_for_all)
+    lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
+                                                            non_crashed_by_solution,
+                                                            performance_criteria,
+                                                            files_root_directory,
+                                                            (0, 1, 4), rdm_factors,
+                                                            solutions=robust_for_all,
+                                                            plot=True)
 
     # most_influential_factors_all_mod = np.array([[35, 1, 7, 0],
     #                                              [35, 5, 7, 0],
     #                                              [35, 5, 7, 0]])
     important_factors_multiple_solutions_plot(most_influential_factors_all,
-                                              lr_coef_all, 3,
+                                              lr_coef_all, 2,
                                               create_labels_list(),
                                               files_root_directory)
 
