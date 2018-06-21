@@ -4,22 +4,22 @@
     <session id="-128298626">
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="298" />
+          <entry key="py" value="2072" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="298" />
+          <entry key="Python" value="2072" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="1" />
+          <entry key="py" value="19" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="1" />
+          <entry key="Python" value="19" />
         </counts>
       </usages-collector>
     </session>

@@ -59,7 +59,7 @@ def calculate_pseudo_robustness_beta(pass_fail, rdm_factors, base_parameter,
 def get_influential_rdm_factors_logistic_regression(objectives_by_solution, non_crashed_by_solution,
                                                     performance_criteria, files_root_directory,
                                                     apply_criteria_on_objs, rdm_factors,
-                                                    not_group_objectives=False, solutions=()):
+                                                    not_group_objectives=False, solutions=(), plot=False):
 
     nsols = len(objectives_by_solution)
     if len(solutions) == 0:
@@ -69,8 +69,6 @@ def get_influential_rdm_factors_logistic_regression(objectives_by_solution, non_
     lr_coef_all = [], [], [], []
 
     for sol_number in solutions:
-        # Load RDM files in a single table
-
         print 'Performing scenario discovery for solution {}'.format(sol_number)
 
         if not_group_objectives:
@@ -82,14 +80,16 @@ def get_influential_rdm_factors_logistic_regression(objectives_by_solution, non_
                          'min', 'min']
                     )[:, apply_criteria_on_objs]
 
-        objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
+        # objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
 
         most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
             logistic_regression_classification(
-                objectives_normalized,
+                objectives,
+                # objectives_normalized,
                 rdm_factors[non_crashed_by_solution[sol_number]],
                 sol_number, performance_criteria,
-                plot=False
+                plot=plot,
+                files_root_directory=files_root_directory if plot else ''
             )
 
         most_influential_factors_all.append(most_influential_factors)
@@ -128,14 +128,16 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashe
                          'min', 'min']
                     )[:, apply_criteria_on_objs]
 
-        objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
+        # objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
 
         most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
             boosted_trees_classification(
-                objectives_normalized,
+                objectives,
+                # objectives_normalized,
                 rdm_factors[non_crashed_by_solution[sol_number]],
                 sol_number, performance_criteria,
-                plot=plot, n_trees=n_trees, tree_depth=tree_depth
+                plot=plot, n_trees=n_trees, tree_depth=tree_depth,
+                files_root_directory=files_root_directory if plot else ''
             )
 
         most_influential_factors_all.append(most_influential_factors)
@@ -212,14 +214,14 @@ def calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
                                                         apply_criteria_on_objs,
                                                         rdm_factors,
                                                         not_group_objectives=
-                                         not_group_objectives)
+                                                        not_group_objectives)
 
     for most_influential_factors, pass_fail, non_crashed_rdm, lr_coef in \
             zip(most_influential_factors_all, pass_fail_all,
                 non_crashed_rdm_all, lr_coef_all):
 
         # Number of important uncertainty factors -- scenario discovery
-        n_factors = np.sum(np.sort(np.abs(lr_coef)) / np.sum(np.abs(lr_coef))
+        n_factors = np.sum(np.sort(np.abs(lr_coef) + 1e-6) / np.sum(np.abs(lr_coef) + 1e-6)
                            > 0.1)
 
         # Parameters to create beta
@@ -261,68 +263,11 @@ def calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
                delimiter=',')
 
 
-def pseudo_robustness_plot(utilities, robustnesses, colors,
-                           files_root_directory, nwcu=259, rob_col=1,
-                           plot_du=True, highlight_sols=(), legend_in_axis=1):
-    nutils = len(utilities)
-    nsols = len(robustnesses[0])
-    ndu = nsols - nwcu
-    bar_width = 0.5
-
-    fig, axes = plt.subplots(nutils, 1, figsize=(8, 6))
-
-    for utility, robustness, axis in zip(utilities, robustnesses, axes):
-        axis.set_ylabel(utility + '\n\nApproximate\nRobustness [-]',
-                        **{'fontname':'CMU Bright', 'size' : 13})
-        axis.set_ylim(0, 1)
-        axis.set_xlim(-0.25, ndu)
-        du_ix = robustness[:, rob_col - 1].astype(int) >= nwcu
-        wcu_ix = robustness[:, rob_col - 1].astype(int) < nwcu
-        bars_wcu = axis.bar(np.arange(ndu) + bar_width + 1,
-                            robustness[wcu_ix, rob_col][:ndu], bar_width,
-                            color=colors[0], label='WCU Optimization')
-        if plot_du:
-            bars_du = axis.bar(np.arange(ndu) + 1,
-                               robustness[du_ix, rob_col], bar_width,
-                               color=colors[1], label='DU Optimization')
-        axis.set_xticks([], [])
-        axis.set_xticklabels(axis.get_xticks(),
-                             {'fontname':'CMU Bright', 'size' : 13})
-        axis.set_yticks([0, 0.5, 1.0])
-        axis.set_yticklabels([0, 0.5, 1.0],
-                             {'fontname':'CMU Bright', 'size' : 13})
-
-        if len(highlight_sols) > 0:
-            for s, c in zip(highlight_sols, cm.get_cmap('Accent').colors):
-                if s < nwcu:
-                    ix = np.where(robustness[wcu_ix, 0] == s)[0][0]
-                    bars_wcu[ix].set_color(c)
-                else:
-                    if plot_du:
-                        ix = np.where(robustness[du_ix, 0] == s)[0][0]
-                        bars_du[ix].set_color(c)
-
-        # axis.spines['top'].set_visible(False)
-        axis.spines['right'].set_visible(False)
-        # axis.spines['bottom'].set_visible(False)
-        axis.spines['left'].set_visible(False)
-
-
-    axes[-1].set_xlabel('Approximate Robustness-ranked Solution',
-                        **{'fontname':'CMU Bright', 'size' : 13})
-
-    # axes[legend_in_axis].legend()
-    plt.savefig(files_root_directory + 'robustness_rank_bars{}{}.svg'.format(
-        '' if plot_du else '_no_du', '' if len(highlight_sols) else '_compromise')
-    )
-    plt.show()
-
-
-def get_robust_compromise_solutions(robustnesses, percentile):
-    ix = int(len(robustnesses[0]) * percentile)
-    percentile_sols = np.array([r[0, 1] * percentile for r in robustnesses])
+def get_robust_compromise_solutions(robustnesses, percentile, beta=False):
+    robustness_col = 3 if beta else 1
+    percentile_sols = np.array([r[0, robustness_col] * percentile for r in robustnesses])
     robustnesses_uniform = np.array([np.array(
-        sorted(r, key=lambda x: x[0]))[:, 1] for r in robustnesses]).T
+        sorted(r, key=lambda x: x[0]))[:, robustness_col] for r in robustnesses]).T
 
     robust_for_all_utilities = []
     for ru in robustnesses_uniform:
@@ -337,37 +282,3 @@ def get_robust_compromise_solutions(robustnesses, percentile):
     return np.where(robust_for_all_utilities)[0], robustnesses_uniform
 
 
-def important_factors_multiple_solutions_plot(most_influential_factors_all,
-                                              lr_coef_all, nfactors, labels,
-                                              files_root_directory):
-    title_font = 'Gill Sans MT'
-    everything_else_font = 'CMU Bright'
-    # everything_else_font = 'Ubuntu'
-    nsols = len(most_influential_factors_all)
-
-    factors_to_plot = np.unique(
-        np.array(most_influential_factors_all)[:, -nfactors:].ravel()
-    )
-    nfactors_to_plot = len(factors_to_plot)
-
-    fig, axes = plt.subplots(1, nsols, sharey=True, sharex=True,
-                             figsize=(10, 3.5))
-
-    for coefs, axis, c, s in zip(lr_coef_all, axes,
-                                 cm.get_cmap('Accent').colors,
-                                 range(nfactors_to_plot)):
-        axis.barh(range(nfactors_to_plot),
-                  np.abs(coefs[factors_to_plot]) / np.sum(np.abs(coefs)),
-                  color=c)
-        axis.set_yticks(range(nfactors_to_plot))
-        axis.set_yticklabels(np.array(labels)[factors_to_plot],
-                             **{'fontname': everything_else_font, 'size': 13})
-        axis.set_xlabel('Relative Importance\n(logistic regression coefficients)',
-                        **{'fontname': everything_else_font, 'size': 13})
-        axis.set_xticks(axis.get_xlim())
-        axis.set_xticklabels(['Low', 'High'], **{'fontname': everything_else_font})
-        axis.set_title('Compromise\nSolution {}'.format(s + 1),
-                       **{'fontname': title_font, 'size': 15})
-
-    # plt.savefig(files_root_directory + 'important_factors.svg')
-    plt.show()

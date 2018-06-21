@@ -10,10 +10,12 @@ def create_labels_list():
                  'Bond term\nmultiplier',
                  'Discount rate\nmultiplier',
              ] + \
-             ['Restriction effectiveness\nmultiplier OWASA',
+             [
+                 'Restriction effectiveness\nmultiplier OWASA',
               'Restriction effectiveness\nmultiplier Durham',
               'Restriction effectiveness\nmultiplier Cary',
-              'Restriction effectiveness\nmultiplier Raleigh'] + \
+              'Restriction effectiveness\nmultiplier Raleigh'
+             ] + \
              ['Evaporation rate\nmultiplier']
 
     infra_labels = [[

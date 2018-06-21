@@ -10,8 +10,7 @@ CRASHED_OBJ_VALUE = 10000
 
 
 def prepare_data_for_classification(objectives_by_solution, rdm_factors,
-                                       performance_criteria):
-
+                                    performance_criteria):
     # Load one solution and check which RDM re-evaluations did not crash
     non_crashed_sols = objectives_by_solution[:, 0] != CRASHED_OBJ_VALUE
     objectives_by_solution = objectives_by_solution[non_crashed_sols]
@@ -30,8 +29,7 @@ def prepare_data_for_classification(objectives_by_solution, rdm_factors,
 
 
 def logistic_regression_classification(objectives_by_solution, rdm_factors, sol_number,
-                                       performance_criteria, plot=False):
-
+                                       performance_criteria, plot=False, files_root_directory=''):
     non_crashed_rdm, pass_fail, nrdms = prepare_data_for_classification(objectives_by_solution, rdm_factors,
                                                                         performance_criteria)
 
@@ -45,17 +43,17 @@ def logistic_regression_classification(objectives_by_solution, rdm_factors, sol_
 
         if plot:
             logistic_regression_plot(most_influential_factors, pass_fail,
-                                     non_crashed_rdm, sol_number)
+                                     non_crashed_rdm, sol_number, lr, files_root_directory=files_root_directory)
         return most_influential_factors, pass_fail, non_crashed_rdm, lr.coef_[0]
     else:
         return -np.ones(nrdms, dtype=int), pass_fail, \
-               [False] * nrdms, np.zeros(nrdms)
+               np.array([[False] * nrdms] * 2000), np.zeros(nrdms)
 
 
 def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number,
                                  performance_criteria, plot=False,
-                                 n_trees=100, tree_depth=3):
-
+                                 n_trees=100, tree_depth=3,
+                                 files_root_directory=''):
     non_crashed_rdm, pass_fail, nrdms = \
         prepare_data_for_classification(objectives_by_solution, rdm_factors,
                                         performance_criteria)
@@ -72,7 +70,7 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number
 
         if plot:
             logistic_regression_plot(most_influential_factors, pass_fail,
-                                     non_crashed_rdm, sol_number, gbc)
+                                     non_crashed_rdm, sol_number, gbc, files_root_directory=files_root_directory)
         return most_influential_factors, pass_fail, non_crashed_rdm, gbc.feature_importances_
     else:
         return -np.ones(nrdms, dtype=int), pass_fail, \
@@ -81,7 +79,7 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number
 
 def logistic_regression_plot(most_influential_factors, pass_fail,
                              non_crashed_rdm, sol_number, classifier,
-                             cmap=cm.get_cmap('coolwarm'), from_middle=0.35):
+                             cmap=cm.get_cmap('coolwarm'), from_middle=0.35, files_root_directory=''):
     most_influential_pair = most_influential_factors[-2:]
 
     # plot logistic regression
@@ -91,32 +89,43 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     # )
 
     ax = plt.subplot(111)
-    ax.scatter(non_crashed_rdm[pass_fail, most_influential_pair[0]],
-               non_crashed_rdm[pass_fail, most_influential_pair[1]],
-               c=cmap(0.5 - from_middle), label='Pass')
-    ax.scatter(non_crashed_rdm[pass_fail == False, most_influential_pair[0]],
-               non_crashed_rdm[pass_fail == False, most_influential_pair[1]],
-               c=cmap(0.5 + from_middle), label='Fail')
     ax.set_xlabel(labels[most_influential_pair[0]])
     ax.set_ylabel(labels[most_influential_pair[1]])
     ax.set_title('RDM for solution {}'.format(sol_number))
 
     # Add legend and shrink current axis by 20% so that legend is not
     # outside plot.
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.85, box.height])
 
-    # x_min, x_max = ax.get_xlim()
-    # y_min, y_max = ax.get_ylim()
-    #
-    # xx, yy = np.meshgrid(np.arange(x_min, x_max, (x_max - x_min) / 100),
-    #                      np.arange(y_min, y_max, (y_max - y_min) / 100))
+    x_data = non_crashed_rdm[:, most_influential_pair[0]]
+    y_data = non_crashed_rdm[:, most_influential_pair[1]]
 
-    z = classifier.predict_proba(non_crashed_rdm)[:, 1]
-    z = z.reshape((len(non_crashed_rdm), len(non_crashed_rdm)))
-    ax.contourf(non_crashed_rdm[:, most_influential_pair[0]],
-                non_crashed_rdm[:, most_influential_pair[1]],
-                z, cmap=cmap, alpha=.8)
+    x_min, x_max = (x_data.min(), x_data.max())
+    y_min, y_max = (y_data.min(), y_data.max())
 
-    plt.show()
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, (x_max - x_min) / 100),
+                         np.arange(y_min, y_max, (y_max - y_min) / 100))
+
+    dummy_points = np.ones((len(xx.ravel()), len(most_influential_factors)))
+    dummy_points[:, most_influential_pair[0]] = xx.ravel()
+    dummy_points[:, most_influential_pair[1]] = yy.ravel()
+
+    z = classifier.predict_proba(dummy_points)[:, 1]
+    z = z.reshape(xx.shape)
+    cs = ax.contourf(xx, yy, 1. - z, 5, cmap=cmap, alpha=.4)
+    # ax.contour(cs, levels=[0, 0.5, 1.], colors='r')
+    ax.scatter(x_data[pass_fail], y_data[pass_fail],
+               c='none', edgecolor=cmap(0.5 - from_middle), label='Pass', s=2)
+    ax.scatter(x_data[pass_fail == False], y_data[pass_fail == False],
+               c='none', edgecolor=cmap(0.5 + from_middle), label='Fail', s=2)
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    if len(files_root_directory) > 0:
+        plt.savefig('{}/scenario_discovery_solution_{}.svg'.format(files_root_directory, sol_number))
+        plt.clf()
+        plt.close()
+    else:
+        plt.show()
+        plt.clf()
+        plt.close()
