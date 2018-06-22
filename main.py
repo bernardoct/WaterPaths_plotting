@@ -1,10 +1,8 @@
 from matplotlib.colors import LinearSegmentedColormap
 
 from data_analysis.sorting_pseudo_robustness import \
-    calculate_pseudo_robustness, get_robust_compromise_solutions, \
-    get_influential_rdm_factors_boosted_trees
-from data_transformation.process_decvars import process_decvars, \
-    process_decvars_inverse
+    calculate_pseudo_robustness, get_robust_compromise_solutions, get_influential_rdm_factors_boosted_trees
+from data_transformation.process_decvars import process_decvars_inverse, check_repeated
 from data_transformation.process_rdm_objectives import *
 from plotting.dec_vars_paxis import plot_dec_vars_paxis
 from plotting.parallel_axis import __calculate_alphas
@@ -291,10 +289,10 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution, 
 
 
 if __name__ == '__main__':
-    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-                           'rdm_results/'
-    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
     #                        'rdm_results/'
+    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+                           'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -327,11 +325,22 @@ if __name__ == '__main__':
                         'Cane Creek\nReservoir Expansion',
                         'Status-quo'])
 
+    # Load decision variables
+    dec_vars_raw = np.loadtxt(files_root_directory
+                              + 'combined_reference_sets.set',
+                              delimiter=',')
+
+    # Look for repeated solutions -- ix is index of non-repeated
+    dec_vars, objectives_rdm, ix = check_repeated(dec_vars_raw[:, :-6], dec_vars_raw[:, -6:])
+
     # Load objectives for each RDM scenario organized by solution (list
     # of matrixes)
     objectives_by_solution, non_crashed_by_solution = \
         load_objectives(files_root_directory, n_solutions, n_rdm_scenarios,
                         n_objectives, n_utilities)  # , processed=False)
+
+    objectives_by_solution = [objectives_by_solution[i] for i in ix]
+    non_crashed_by_solution = [non_crashed_by_solution[i] for i in ix]
 
     # Load RDM factors
     rdm_utilities = np.loadtxt(files_root_directory + 'rdm_utilities_reeval.csv', delimiter=',')
@@ -351,6 +360,7 @@ if __name__ == '__main__':
     # Load objectives on either DU or WCU space, as they came out of Borg
     objective_on_wcu = load_on_du_objectives(files_root_directory, on='wcu')
     objective_on_du = load_on_du_objectives(files_root_directory, on='du')
+
     axis_labels = ['Reliability', 'Restriction\nFrequency',
                    'Infrastructure Net\nPresent Value', 'Financial Cost',
                    'Financial\nRisk', 'Jordan Lake\nAllocation'] * n_utilities
@@ -396,16 +406,16 @@ if __name__ == '__main__':
         get_robust_compromise_solutions(robustnesses, 0.75, beta=True)
 
     # PLOT APPROX. ROBUSTNESS BAR CHART
-    # pseudo_robustness_plot(utilities, robustnesses,
-    #                        [oranges_hc(0.4), blues_hc(0.4)],
-    #                        files_root_directory, beta=True)
-    # pseudo_robustness_plot(utilities, robustnesses,
-    #                        [oranges_hc(0.4), blues_hc(0.4)],
-    #                        files_root_directory, plot_du=False)
-    # pseudo_robustness_plot(utilities, robustnesses,
-    #                        [oranges_hc(0.4), blues_hc(0.4)],
-    #                        files_root_directory,
-    #                        highlight_sols=robust_for_all, beta=True)
+    pseudo_robustness_plot(utilities, robustnesses,
+                           [oranges_hc(0.4), blues_hc(0.4)],
+                           files_root_directory, beta=True)
+    pseudo_robustness_plot(utilities, robustnesses,
+                           [oranges_hc(0.4), blues_hc(0.4)],
+                           files_root_directory, plot_du=False)
+    pseudo_robustness_plot(utilities, robustnesses,
+                           [oranges_hc(0.4), blues_hc(0.4)],
+                           files_root_directory,
+                           highlight_sols=robust_for_all, beta=True)
 
     # # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
     # # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,
@@ -415,20 +425,20 @@ if __name__ == '__main__':
     # #                                                               (0, 1, 4), rdm_factors,
     # #                                                               solutions=robust_for_all,
     # #                                                               plot=True)
-    # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
-    # lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
-    #                                                         non_crashed_by_solution,
-    #                                                         performance_criteria,
-    #                                                         files_root_directory,
-    #                                                         (0, 1, 4), rdm_factors,
-    #                                                         solutions=robust_for_all,
-    #                                                         plot=True, n_trees=25, tree_depth=2)
+    most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
+    lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
+                                                            non_crashed_by_solution,
+                                                            performance_criteria,
+                                                            files_root_directory,
+                                                            (0, 1, 4), rdm_factors,
+                                                            solutions=robust_for_all,
+                                                            plot=True, n_trees=25, tree_depth=2)
 
-    # # Only low and high WJLWTP had permitting times.
-    # important_factors_multiple_solutions_plot(most_influential_factors_all,
-    #                                           lr_coef_all, 2,
-    #                                           create_labels_list(),
-    #                                           files_root_directory)
+    # Only low and high WJLWTP had permitting times.
+    important_factors_multiple_solutions_plot(most_influential_factors_all,
+                                              lr_coef_all, 2,
+                                              create_labels_list(),
+                                              files_root_directory)
 
     s = robust_for_all[0]
     utility_to_plot = 1
@@ -534,10 +544,11 @@ if __name__ == '__main__':
 
     dec_vars_raw = np.loadtxt(files_root_directory
                               + 'combined_reference_sets.set',
-                              delimiter=',')[robust_for_all]
-    # dec_vars = process_decvars(dec_vars_raw, ['Durham', 'OWASA',
-    #                                           'Raleigh', 'Cary'])
-    dec_vars = process_decvars_inverse(dec_vars_raw,
+                              delimiter=',')
+
+    dec_vars_no_rep, ix = check_repeated(dec_vars_raw)
+
+    dec_vars = process_decvars_inverse(dec_vars_raw[robust_for_all],
                                    ['Durham', 'OWASA', 'Raleigh', 'Cary'],
                                    {'Restriction\nTrigger': 0,
                                     'Transfer\nTrigger': 4,
@@ -553,4 +564,4 @@ if __name__ == '__main__':
                  'ACFC': [0, 0.1],
                  'Long term\nROF': [0, 1],
                  'Jordan Lake\nAllocation': [0, 0.7]}
-    plot_dec_vars_paxis(dec_vars, (2, 3), max_mins)
+    # plot_dec_vars_paxis(dec_vars, (2, 3), max_mins)

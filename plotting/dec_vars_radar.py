@@ -156,43 +156,6 @@ def example_data():
     return data
 
 
-if __name__ == '__main__':
-    N = 9
-    theta = radar_factory(N, frame='polygon')
-
-    data = example_data()
-    spoke_labels = data.pop(0)
-
-    fig, axes = plt.subplots(figsize=(9, 9), nrows=2, ncols=2,
-                             subplot_kw=dict(projection='radar'))
-    fig.subplots_adjust(wspace=0.25, hspace=0.20, top=0.85, bottom=0.05)
-
-    colors = ['b', 'r', 'g', 'm', 'y']
-    # Plot the four cases from the example data on separate axes
-    for ax, (title, case_data) in zip(axes.flatten(), data):
-        ax.set_rmax(1.0)
-        ax.set_rmin(0.0)
-        ax.set_rgrids([0.2, 0.4, 0.6, 0.8])
-        ax.set_title(title, weight='bold', size='medium', position=(0.5, 1.1),
-                     horizontalalignment='center', verticalalignment='center')
-        for d, color in zip(case_data, colors):
-            ax.plot(theta, d, color=color)
-            ax.fill(theta, d, facecolor=color, alpha=0.25)
-        ax.set_varlabels(spoke_labels)
-
-    # add legend relative to top-left plot
-    ax = axes[0, 0]
-    labels = ('Factor 1', 'Factor 2', 'Factor 3', 'Factor 4', 'Factor 5')
-    legend = ax.legend(labels, loc=(0.9, .95),
-                       labelspacing=0.1, fontsize='small')
-
-    fig.text(0.5, 0.965, '5-Factor Solution Profiles Across Four Scenarios',
-             horizontalalignment='center', color='black', weight='bold',
-             size='large')
-
-    plt.show()
-
-
 def plot_decvars_radar(dec_vars, min_max):
     n_utils = len(dec_vars)
     n_dec_vars = len(dec_vars.items()[0][1])
