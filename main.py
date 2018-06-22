@@ -3,14 +3,16 @@ from matplotlib.colors import LinearSegmentedColormap
 from data_analysis.sorting_pseudo_robustness import \
     calculate_pseudo_robustness, get_robust_compromise_solutions, \
     get_influential_rdm_factors_boosted_trees
-from data_transformation.process_decvars import process_decvars
+from data_transformation.process_decvars import process_decvars, \
+    process_decvars_inverse
 from data_transformation.process_rdm_objectives import *
+from plotting.dec_vars_paxis import plot_dec_vars_paxis
 from plotting.parallel_axis import __calculate_alphas
 from plotting.pathways_plotting import *
 from plotting.parallel_axis import *
 import os.path
 
-from plotting.radar import plot_decvars_radar
+from plotting.dec_vars_radar import plot_decvars_radar
 from plotting.robustness_bar_chart import pseudo_robustness_plot, important_factors_multiple_solutions_plot
 
 bu_cy = LinearSegmentedColormap.from_list('BuCy', [(0, 0, 1), (0, 1, 1)])
@@ -289,10 +291,10 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution, 
 
 
 if __name__ == '__main__':
-    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-    #                        'rdm_results/'
-    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
                            'rdm_results/'
+    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    #                        'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -405,28 +407,28 @@ if __name__ == '__main__':
     #                        files_root_directory,
     #                        highlight_sols=robust_for_all, beta=True)
 
+    # # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
+    # # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,
+    # #                                                               non_crashed_by_solution,
+    # #                                                               performance_criteria,
+    # #                                                               files_root_directory,
+    # #                                                               (0, 1, 4), rdm_factors,
+    # #                                                               solutions=robust_for_all,
+    # #                                                               plot=True)
     # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
-    # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,
-    #                                                               non_crashed_by_solution,
-    #                                                               performance_criteria,
-    #                                                               files_root_directory,
-    #                                                               (0, 1, 4), rdm_factors,
-    #                                                               solutions=robust_for_all,
-    #                                                               plot=True)
-    most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
-    lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
-                                                            non_crashed_by_solution,
-                                                            performance_criteria,
-                                                            files_root_directory,
-                                                            (0, 1, 4), rdm_factors,
-                                                            solutions=robust_for_all,
-                                                            plot=True, n_trees=25, tree_depth=2)
+    # lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
+    #                                                         non_crashed_by_solution,
+    #                                                         performance_criteria,
+    #                                                         files_root_directory,
+    #                                                         (0, 1, 4), rdm_factors,
+    #                                                         solutions=robust_for_all,
+    #                                                         plot=True, n_trees=25, tree_depth=2)
 
-    # Only low and high WJLWTP had permitting times.
-    important_factors_multiple_solutions_plot(most_influential_factors_all,
-                                              lr_coef_all, 2,
-                                              create_labels_list(),
-                                              files_root_directory)
+    # # Only low and high WJLWTP had permitting times.
+    # important_factors_multiple_solutions_plot(most_influential_factors_all,
+    #                                           lr_coef_all, 2,
+    #                                           create_labels_list(),
+    #                                           files_root_directory)
 
     s = robust_for_all[0]
     utility_to_plot = 1
@@ -435,10 +437,10 @@ if __name__ == '__main__':
     ninfra = np.array([0, 6, 0, 4])[utility_to_plot]
     name = np.array(utilities)[utility_to_plot]
 
-    most_influential_factors = most_influential_factors_all[0]
-    rdm_max = np.argmax(rdm_factors[:, most_influential_factors[-1]])
-    rdm_min = np.argmin(rdm_factors[:, most_influential_factors[-1]])
-    rdm_mono = rdm_max
+    # most_influential_factors = most_influential_factors_all[0]
+    # rdm_max = np.argmax(rdm_factors[:, most_influential_factors[-1]])
+    # rdm_min = np.argmin(rdm_factors[:, most_influential_factors[-1]])
+    # rdm_mono = rdm_max
 
     # pathways_all = load_pathways_solution(files_root_directory + '../re-evaluation_against_du/pathways/',
     #                                       s, [rdm_max, rdm_min])
@@ -530,7 +532,25 @@ if __name__ == '__main__':
     #                  construction_order, savefig_directory=files_root_directory,
     #                  sort_by=sort_pathways_by, ninfra=7, year0=2015)
 
-    dec_vars_raw = np.loadtxt(files_root_directory + 'combined_reference_sets.set', delimiter=',')[robust_for_all]
-    dec_vars = process_decvars(dec_vars_raw, utilities)
+    dec_vars_raw = np.loadtxt(files_root_directory
+                              + 'combined_reference_sets.set',
+                              delimiter=',')[robust_for_all]
+    # dec_vars = process_decvars(dec_vars_raw, ['Durham', 'OWASA',
+    #                                           'Raleigh', 'Cary'])
+    dec_vars = process_decvars_inverse(dec_vars_raw,
+                                   ['Durham', 'OWASA', 'Raleigh', 'Cary'],
+                                   {'Restriction\nTrigger': 0,
+                                    'Transfer\nTrigger': 4,
+                                    'Insurance\nTrigger': 15,
+                                    'ACFC': 11,
+                                    'Long term\nROF': 23,
+                                    'Jordan Lake\nAllocation': 7})
 
-    plot_decvars_radar(dec_vars, ['Restriction\nTrigger', 'Transfer\nTrigger'], utilities)
+    # plot_decvars_radar(dec_vars, [[0] * 4, [1] * 4])
+    max_mins =  {'Restriction\nTrigger': [0, 1],
+                 'Transfer\nTrigger': [0, 1],
+                 'Insurance\nTrigger': [0, 1],
+                 'ACFC': [0, 0.1],
+                 'Long term\nROF': [0, 1],
+                 'Jordan Lake\nAllocation': [0, 0.7]}
+    plot_dec_vars_paxis(dec_vars, (2, 3), max_mins)
