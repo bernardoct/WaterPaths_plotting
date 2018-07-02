@@ -79,7 +79,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, #cmap,
                            savefig_directory='', nrealizations=1000,
                            sort_by=(), ninfra=0, sources=(),
                            construction_order=(),
-                           utility_name='', year0=0):
+                           utility_name='', year0=0, suffix=''):
 
     fig, ax = plt.subplots(figsize=(8, 5))
     x, y, pathways = get_mesh_pathways(pathways_utility, nweeks,
@@ -129,8 +129,8 @@ def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, #cmap,
         plt.show()
     else:
         plt.savefig(savefig_directory +
-                    'Pathways_s{}_RDM{}_{}_colormap.svg'.format(s, rdm,
-                                                                utility_name))
+                    'Pathways_s{}_RDM{}_{}_{}_colormap.svg'.format(
+                        s, rdm, suffix, utility_name))
 
 
 def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
