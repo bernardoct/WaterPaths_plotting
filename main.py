@@ -1,7 +1,11 @@
 from matplotlib.colors import LinearSegmentedColormap
 
+from data_analysis.clustering import gmm_cluster
+from data_analysis.complimentary_solutions import calc_pass_fail
 from data_analysis.sorting_pseudo_robustness import \
-    calculate_pseudo_robustness, get_robust_compromise_solutions, get_influential_rdm_factors_boosted_trees
+    calculate_pseudo_robustness, get_robust_compromise_solutions, \
+    get_influential_rdm_factors_boosted_trees, \
+    get_influential_rdm_factors_logistic_regression
 from data_transformation.process_decvars import process_decvars_inverse, check_repeated
 from data_transformation.process_rdm_objectives import *
 from plotting.dec_vars_paxis import plot_dec_vars_paxis
@@ -12,6 +16,7 @@ import os.path
 
 from plotting.dec_vars_radar import plot_decvars_radar
 from plotting.robustness_bar_chart import pseudo_robustness_plot, important_factors_multiple_solutions_plot
+from sklearn import mixture
 
 bu_cy = LinearSegmentedColormap.from_list('BuCy', [(0, 0, 1), (0, 1, 1)])
 bu_cy_r = bu_cy.reversed()
@@ -29,8 +34,9 @@ light_greys_hc = LinearSegmentedColormap.from_list('Light_greys_hc', light_greys
 cmaps = [oranges_hc, blues_hc]
 
 
-def plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped, objective_rdm_grouped, axis_labels,
-                   dataset_names, files_root_directory):
+def plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped,
+                   objective_rdm_grouped, axis_labels, dataset_names,
+                   files_root_directory):
     columns_to_plot = range(6)
     color_column = 0
 
@@ -268,16 +274,20 @@ def plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped, objective_
     #               )
 
 
-def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution, non_crashed_by_solution,
-                                  rdm_factors, files_root_directory, utilities):
+def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution,
+                                  non_crashed_by_solution, rdm_factors,
+                                  files_root_directory, utilities):
     robustnesses = []
     # Robustness calculation
     for u in range(len(utilities)):
         if not os.path.isfile(files_root_directory + 'robustness_{}.csv'
                 .format(utilities[u])):
-            calculate_pseudo_robustness(objectives_by_solution, non_crashed_by_solution,
-                                        performance_criteria, files_root_directory,
-                                        (0 + u * 6, 1 + u * 6, 4 + u * 6), utilities[u], rdm_factors,
+            calculate_pseudo_robustness(objectives_by_solution,
+                                        non_crashed_by_solution,
+                                        performance_criteria,
+                                        files_root_directory,
+                                        (0 + u * 6, 1 + u * 6, 4 + u * 6),
+                                        utilities[u], rdm_factors,
                                         not_group_objectives=True)
 
         robustnesses.append(
@@ -289,10 +299,10 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution, 
 
 
 if __name__ == '__main__':
-    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-    #                        'rdm_results/'
-    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
                            'rdm_results/'
+    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    #                        'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -331,7 +341,8 @@ if __name__ == '__main__':
                               delimiter=',')
 
     # Look for repeated solutions -- ix is index of non-repeated
-    dec_vars, objectives_rdm, ix = check_repeated(dec_vars_raw[:, :-6], dec_vars_raw[:, -6:])
+    dec_vars, objectives_rdm, ix = check_repeated(dec_vars_raw[:, :-6],
+                                                  dec_vars_raw[:, -6:])
 
     # Load objectives for each RDM scenario organized by solution (list
     # of matrixes)
@@ -343,10 +354,14 @@ if __name__ == '__main__':
     non_crashed_by_solution = [non_crashed_by_solution[i] for i in ix]
 
     # Load RDM factors
-    rdm_utilities = np.loadtxt(files_root_directory + 'rdm_utilities_reeval.csv', delimiter=',')
-    rdm_dmp = np.loadtxt(files_root_directory + 'rdm_dmp_reeval.csv', delimiter=',')
+    rdm_utilities = np.loadtxt(files_root_directory +
+                               'rdm_utilities_reeval.csv', delimiter=',')
+    rdm_dmp = np.loadtxt(files_root_directory + 'rdm_dmp_reeval.csv',
+                         delimiter=',')
     rdm_sources_meaningful = [0] + range(15, 51)
-    rdm_water_sources = np.loadtxt(files_root_directory + 'rdm_water_sources_reeval.csv', delimiter=',',
+    rdm_water_sources = np.loadtxt(files_root_directory +
+                                   'rdm_water_sources_reeval.csv',
+                                   delimiter=',',
                                    usecols=rdm_sources_meaningful)
     rdm_factors = np.hstack((rdm_utilities, rdm_dmp, rdm_water_sources))
     rdm_inflows = np.loadtxt(files_root_directory + 'rdm_inflows.csv')
@@ -358,8 +373,10 @@ if __name__ == '__main__':
                                                n_utilities)
 
     # Load objectives on either DU or WCU space, as they came out of Borg
-    objective_on_wcu = load_on_du_objectives(files_root_directory, on='wcu')
-    objective_on_du = load_on_du_objectives(files_root_directory, on='du')
+    objective_on_wcu = load_on_du_objectives(files_root_directory,
+                                             on='wcu', ix=ix)
+    objective_on_du = load_on_du_objectives(files_root_directory,
+                                            on='du', ix=ix)
 
     axis_labels = ['Reliability', 'Restriction\nFrequency',
                    'Infrastructure Net\nPresent Value', 'Financial Cost',
@@ -376,8 +393,10 @@ if __name__ == '__main__':
                                              ['max', 'min', 'min', 'min', 'min',
                                               'min'])
     objective_on_wcu_grouped = group_objectives(objective_on_wcu,
-                                                ['max', 'min', 'min', 'min', 'min',
-                                                 'min'])
+                                                ['max', 'min', 'min', 'min',
+                                                 'min', 'min'])
+
+
 
     # Get rid of two really low reliability solutions that are shifting
     #       the blue and making all lines look dark except the corresponding few.
@@ -389,7 +408,8 @@ if __name__ == '__main__':
                                                 'min', 'min'])
 
     # # Plot all parallel axis plots
-    # plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped, objective_rdm_grouped, axis_labels,
+    # plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped,
+    #                objective_rdm_grouped, axis_labels,
     #                dataset_names, files_root_directory)
 
     # Retrieve solutions that met brushing criteria
@@ -399,46 +419,49 @@ if __name__ == '__main__':
 
     performance_criteria = (0.990, 0.2, 0.1)
     utilities = ['OWASA', 'Durham', 'Cary', 'Raleigh']
-    robustnesses = calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution, non_crashed_by_solution,
-                                                 rdm_factors, files_root_directory, utilities)
+    robustnesses = calculate_pseudo_robustnesses(performance_criteria,
+                                                 objectives_by_solution,
+                                                 non_crashed_by_solution,
+                                                 rdm_factors,
+                                                 files_root_directory, utilities)
 
     robust_for_all, robustnesses_ordered_by_sol_id = \
         get_robust_compromise_solutions(robustnesses, 0.75, beta=True)
 
     # PLOT APPROX. ROBUSTNESS BAR CHART
-    pseudo_robustness_plot(utilities, robustnesses,
-                           [oranges_hc(0.4), blues_hc(0.4)],
-                           files_root_directory, beta=True)
-    pseudo_robustness_plot(utilities, robustnesses,
-                           [oranges_hc(0.4), blues_hc(0.4)],
-                           files_root_directory, plot_du=False)
-    pseudo_robustness_plot(utilities, robustnesses,
-                           [oranges_hc(0.4), blues_hc(0.4)],
-                           files_root_directory,
-                           highlight_sols=robust_for_all, beta=True)
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory, beta=True)
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory, plot_du=False)
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory,
+    #                        highlight_sols=robust_for_all, beta=True)
 
-    # # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
-    # # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,
-    # #                                                               non_crashed_by_solution,
-    # #                                                               performance_criteria,
-    # #                                                               files_root_directory,
-    # #                                                               (0, 1, 4), rdm_factors,
-    # #                                                               solutions=robust_for_all,
-    # #                                                               plot=True)
-    most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
-    lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
-                                                            non_crashed_by_solution,
-                                                            performance_criteria,
-                                                            files_root_directory,
-                                                            (0, 1, 4), rdm_factors,
-                                                            solutions=robust_for_all,
-                                                            plot=True, n_trees=25, tree_depth=2)
+    # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
+    # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,
+    #                                                               non_crashed_by_solution,
+    #                                                               performance_criteria,
+    #                                                               files_root_directory,
+    #                                                               (0, 1, 4), rdm_factors,
+    #                                                               solutions=robust_for_all,
+    #                                                               plot=True)
+    # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
+    # lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
+    #                                                         non_crashed_by_solution,
+    #                                                         performance_criteria,
+    #                                                         files_root_directory,
+    #                                                         (0, 1, 4), rdm_factors,
+    #                                                         solutions=robust_for_all,
+    #                                                         plot=True, n_trees=25, tree_depth=2)
 
-    # Only low and high WJLWTP had permitting times.
-    important_factors_multiple_solutions_plot(most_influential_factors_all,
-                                              lr_coef_all, 2,
-                                              create_labels_list(),
-                                              files_root_directory)
+    # # Only low and high WJLWTP had permitting times.
+    # important_factors_multiple_solutions_plot(most_influential_factors_all,
+    #                                           lr_coef_all, 2,
+    #                                           create_labels_list(),
+    #                                           files_root_directory)
 
     s = robust_for_all[0]
     utility_to_plot = 1
@@ -542,13 +565,13 @@ if __name__ == '__main__':
     #                  construction_order, savefig_directory=files_root_directory,
     #                  sort_by=sort_pathways_by, ninfra=7, year0=2015)
 
-    dec_vars_raw = np.loadtxt(files_root_directory
-                              + 'combined_reference_sets.set',
-                              delimiter=',')
+    # dec_vars_raw = np.loadtxt(files_root_directory
+    #                           + 'combined_reference_sets.set',
+    #                           delimiter=',')
 
-    dec_vars_no_rep, ix = check_repeated(dec_vars_raw)
+    # dec_vars_no_rep, ix = check_repeated(dec_vars_raw)
 
-    dec_vars = process_decvars_inverse(dec_vars_raw[robust_for_all],
+    dec_vars_processed = process_decvars_inverse(dec_vars[robust_for_all],
                                    ['Durham', 'OWASA', 'Raleigh', 'Cary'],
                                    {'Restriction\nTrigger': 0,
                                     'Transfer\nTrigger': 4,
@@ -564,4 +587,8 @@ if __name__ == '__main__':
                  'ACFC': [0, 0.1],
                  'Long term\nROF': [0, 1],
                  'Jordan Lake\nAllocation': [0, 0.7]}
-    # plot_dec_vars_paxis(dec_vars, (2, 3), max_mins)
+    # plot_dec_vars_paxis(dec_vars_processed, (2, 3), max_mins)
+
+    # gmm_cluster(dec_vars, files_root_directory)
+
+    calc_pass_fail(objectives_by_solution, criteria)

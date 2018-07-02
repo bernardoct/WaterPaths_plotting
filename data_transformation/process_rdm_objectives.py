@@ -112,7 +112,7 @@ def load_objectives(files_root_directory, nsols, n_rdm_scenarios,
         return load_objs_by_solution(files_root_directory, nsols)
 
 
-def load_on_du_objectives(files_root_directory, on):
+def load_on_du_objectives(files_root_directory, on, ix=[]):
     if on == 'du':
         objectives = np.loadtxt(
             files_root_directory + 'Objectives_in_wcu_du/objs_all_on_du.csv',
@@ -127,6 +127,11 @@ def load_on_du_objectives(files_root_directory, on):
 
     jla = np.loadtxt(files_root_directory + 'combined_reference_sets.set',
                      delimiter=',')[:, 7:11]
+
+    if len(ix) > 0:
+        objectives = objectives[ix]
+        jla = jla[ix]
+
     overallocation = np.sum(jla, axis=1) > 1.
     jla[overallocation, :] /= \
         np.tile(np.sum(jla, axis=1)[overallocation], (4, 1)).T

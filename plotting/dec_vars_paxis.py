@@ -14,7 +14,7 @@ def plot_dec_vars_paxis(dec_vars, grid_size, max_mins):
         for u_name in utils_names:
             dv_data.append(dec_vars[dv_name][u_name])
 
-        dv_data = np.array(dv_data)
+        dv_data = np.array(dv_data).T
 
         # If JLA, normalize data if needed
         if dv_name == 'Jordan Lake\nAllocation':
@@ -24,7 +24,8 @@ def plot_dec_vars_paxis(dec_vars, grid_size, max_mins):
                     d /= total_alloc
 
         ax.set_ylim(max_mins[dv_name])
-        ax.plot(dv_data)
+        for data, c in zip(dv_data, cm.get_cmap('Accent').colors):
+            ax.plot(data, c=c)
         ax.set_xticks(range(len(utils_names)))
         ax.set_xticklabels(utils_names)
         ax.set_title(dv_name)

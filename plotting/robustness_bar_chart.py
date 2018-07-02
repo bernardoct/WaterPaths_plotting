@@ -11,6 +11,8 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
     ndu = nsols - nwcu
     bar_width = 0.5
     rob_col = 3 if beta else 1
+    highlight_sols = (highlight_sols) if isinstance(highlight_sols, int) \
+        else highlight_sols
 
     fig, axes = plt.subplots(nutils, 1, figsize=(8, 6))
     plt.subplots_adjust(left=0.2)
@@ -93,6 +95,8 @@ def important_factors_multiple_solutions_plot(most_influential_factors_all,
 
     fig, axes = plt.subplots(1, nsols, sharey=True, sharex=True,
                              figsize=(10, 3.5))
+    axes = axes if isinstance(axes, list) else [axes]
+
     plt.subplots_adjust(left=0.2, bottom=0.2, top=0.85, right=0.98)
 
     for coefs, axis, c, s in zip(lr_coef_all, axes,
