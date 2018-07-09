@@ -56,7 +56,7 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=1.):
             np.multiply(not_brushed,
                         np.multiply(dataset[:, b] < max(brush_criteria[b]),
                                     dataset[:, b] > min(brush_criteria[b])))
-    alphas[[not c for c in not_brushed]] = 0.01
+    alphas[[not c for c in not_brushed]] = 0.015
 
     return alphas
 
@@ -76,7 +76,8 @@ def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
 
         # Plot data
         for d, dc, a in zip(dataset_normed, dataset_color_values, alphas):
-            ax.plot(x_axis, d[columns], c=cmap(dc[color_column]), alpha=a, lw=lw)
+            ax.plot(x_axis, d[columns], c=cmap(dc[color_column]), alpha=a,
+                    lw=lw)
 
 
 def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
@@ -130,17 +131,19 @@ def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
 
 
 def __set_numbers_labels_axis(ax, fig, data_min, data_max, columns, invert,
-                              labels, x_axis, plot_font):
+                              labels, x_axis, plot_font, axis_number_formating=[]):
+    if len(axis_number_formating) == 0:
+        axis_number_formating = ['{0:.2g}'] * len(x_axis)
 
     axis_height = fig.get_size_inches()[1] * ax.get_position().height
     base_height = 0.65 * 5.
 
-    for x in x_axis:
+    for x, f in zip(x_axis, axis_number_formating):
         ax.text(x, -0.07 * base_height / axis_height,
-                '{0:.2g}'.format(invert[columns[x]] * data_min[columns][x]),
+                f.format(invert[columns[x]] * data_min[columns][x]),
                 horizontalalignment='center', **plot_font)
         ax.text(x, 1. + 0.03 * base_height / axis_height,
-                '{0:.2g}'.format(invert[columns[x]] * data_max[columns][x]),
+                f.format(invert[columns[x]] * data_max[columns][x]),
                 horizontalalignment='center', **plot_font)
         ax.text(x, 1. + 0.09 * base_height / axis_height,
                 np.array(labels)[columns][x], horizontalalignment='center',
@@ -153,7 +156,8 @@ def parallel_axis(datasets, columns, color_column, color_maps,
                   axis_labels, title, dataset_names, axis_ranges=(),
                   fontname_title='Gill Sans MT',
                   fontname_body='CMU Bright', file_name='',
-                  size=(9, 6), axis_to_invert=(), brush_criteria=dict(), lw=1.):
+                  size=(9, 6), axis_to_invert=(), brush_criteria=dict(), lw=1.,
+                  axis_number_formating=[]):
 
     datasets_mod = deepcopy(datasets)
     axis_ranges = np.array(axis_ranges)
@@ -195,7 +199,8 @@ def parallel_axis(datasets, columns, color_column, color_maps,
 
     # Set numbers, axis labels, and axis spines
     __set_numbers_labels_axis(ax, fig, data_min, data_max, columns, invert,
-                              axis_labels, x_axis, plot_font)
+                              axis_labels, x_axis, plot_font,
+                              axis_number_formating=axis_number_formating)
 
     # Save file or display plot
     if file_name != '':

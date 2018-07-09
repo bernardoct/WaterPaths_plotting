@@ -94,10 +94,10 @@ def important_factors_multiple_solutions_plot(most_influential_factors_all,
     nfactors_to_plot = len(factors_to_plot)
 
     fig, axes = plt.subplots(1, nsols, sharey=True, sharex=True,
-                             figsize=(10, 3.5))
+                             figsize=(4.6, 3.5))
     axes = axes if isinstance(axes, list) else [axes]
 
-    plt.subplots_adjust(left=0.2, bottom=0.2, top=0.85, right=0.98)
+    plt.subplots_adjust(left=0.45, bottom=0.2, top=0.85, right=0.96)
 
     for coefs, axis, c, s in zip(lr_coef_all, axes,
                                  cm.get_cmap('Accent').colors,

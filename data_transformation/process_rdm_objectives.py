@@ -30,8 +30,8 @@ def create_labels_list():
 
 
 def read_rdm_file(files_root_directory, i):
-    file = files_root_directory + "Objectives_by_rdm/" \
-                                  "Objectives_RDM{}_sols0_to_368.csv".format(i)
+    file = files_root_directory + 'data/Objectives_by_rdm/' \
+                                  'Objectives_RDM{}_sols0_to_368.csv'.format(i)
     print 'Reading objectives rdm {}'.format(i)
     return np.loadtxt(file, delimiter=',')
 
@@ -42,7 +42,7 @@ def to_objectives_by_solution(objectives_rdm, nsols, nobjs,
     non_crashed_rdm_by_solution = []
     nobjs_per_utility = nobjs / nutils
     nrdm = len(objectives_rdm)
-    jla = np.loadtxt(files_root_directory + 'combined_reference_sets.set',
+    jla = np.loadtxt(files_root_directory + 'data/combined_reference_sets.set',
                      delimiter=',')
     for s in range(nsols):
         jla_sol = jla[s, 7:11]
@@ -67,13 +67,13 @@ def to_objectives_by_solution(objectives_rdm, nsols, nobjs,
 
         objectives_sol_jla = objectives_sol_jla[non_crashed_rdm]
 
-        np.save(files_root_directory + 'Objectives_by_solution/'
+        np.save(files_root_directory + 'data/Objectives_by_solution/'
                                        'Objectives_s{}.npy'.format(s),
                 objectives_sol_jla)
-        np.savetxt(files_root_directory + 'Objectives_by_solution/'
+        np.savetxt(files_root_directory + 'data/Objectives_by_solution/'
                                           'Objectives_s{}.csv'.format(s),
                    objectives_sol_jla, delimiter=',')
-        np.save(files_root_directory + 'Objectives_by_solution/'
+        np.save(files_root_directory + 'data/Objectives_by_solution/'
                                        'Non_crashed_s{}.npy'.format(s),
                 non_crashed_rdm)
 
@@ -125,7 +125,7 @@ def load_on_du_objectives(files_root_directory, on, ix=[]):
         raise ValueError('When reading objective files you have to specify '
                          'either \'wcu\' or \'du\'.')
 
-    jla = np.loadtxt(files_root_directory + 'combined_reference_sets.set',
+    jla = np.loadtxt(files_root_directory + 'data/combined_reference_sets.set',
                      delimiter=',')[:, 7:11]
 
     if len(ix) > 0:
