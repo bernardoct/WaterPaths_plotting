@@ -54,9 +54,9 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=1.):
     for b in brush_criteria:
         not_brushed = \
             np.multiply(not_brushed,
-                        np.multiply(dataset[:, b] < max(brush_criteria[b]),
-                                    dataset[:, b] > min(brush_criteria[b])))
-    alphas[[not c for c in not_brushed]] = 0.015
+                        np.multiply(dataset[:, b] <= max(brush_criteria[b]),
+                                    dataset[:, b] >= min(brush_criteria[b])))
+    alphas[[not c for c in not_brushed]] = 0.2
 
     return alphas
 
@@ -190,7 +190,7 @@ def parallel_axis(datasets, columns, color_column, color_maps,
 
     # Plot Datasets
     __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
-                    color_column, x_axis, brush_criteria=brush_criteria, lw=lw)
+                    color_column, x_axis, brush_criteria=brush_criteria, lw=lw, base_alpha=1.0)
 
     # Add color bars
     cbar_axis = __add_color_bar(datasets, ax, dataset_names, color_maps,

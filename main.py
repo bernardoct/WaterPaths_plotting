@@ -31,6 +31,10 @@ oranges_hc = LinearSegmentedColormap.from_list('Oranges_hc', oranges_hc_colors)
 blues_hc = LinearSegmentedColormap.from_list('Blues_hc', blues_hc_colors)
 light_greys_hc = LinearSegmentedColormap.from_list('Light_greys_hc', light_greys)
 
+oranges_hc_r = LinearSegmentedColormap.from_list('Oranges_hc_r', oranges_hc_colors[::-1])
+blues_hc_r = LinearSegmentedColormap.from_list('Blues_hc_r', blues_hc_colors[::-1])
+light_greys_hc_r = LinearSegmentedColormap.from_list('Light_greys_hc_r', light_greys[::-1])
+
 cmaps = [oranges_hc, blues_hc]
 
 
@@ -327,10 +331,10 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution,
 
 
 if __name__ == '__main__':
-    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-                           'rdm_results/'
-    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
     #                        'rdm_results/'
+    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+                           'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -442,9 +446,9 @@ if __name__ == '__main__':
                                                 'min', 'min'])
 
     # Plot all parallel axis plots
-    plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped,
-                   objective_rdm_grouped, axis_labels,
-                   dataset_names, files_root_directory, n_wcu, axes_formating)
+    # plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped,
+    #                objective_rdm_grouped, axis_labels,
+    #                dataset_names, files_root_directory, n_wcu, axes_formating)
 
     # Retrieve solutions that met brushing criteria
     alphas = __calculate_alphas(objective_rdm_grouped, brush_criteria1,
@@ -471,10 +475,19 @@ if __name__ == '__main__':
     # pseudo_robustness_plot(utilities, robustnesses,
     #                        [oranges_hc(0.4), blues_hc(0.4)],
     #                        files_root_directory, plot_du=False, beta=True)
-    pseudo_robustness_plot(utilities, robustnesses,
-                           [oranges_hc(0.4), blues_hc(0.4)],
-                           files_root_directory,
-                           highlight_sols=robust_for_all, beta=rob_beta)
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory,
+    #                        highlight_sols=robust_for_all, beta=rob_beta)
+
+    # brushing_robustness = dict(zip(range(4), zip([1.1] * 4, robustnesses_ordered_by_sol_id[robust_for_all[0]] - 0.001)))
+    # parallel_axis([robustnesses_ordered_by_sol_id[:n_wcu], robustnesses_ordered_by_sol_id[n_wcu:]], range(4), 1,
+    #               [oranges_hc_r, blues_hc_r], utilities, 'Robustness Proxy',
+    #               ['WCU Optimization', 'DU Optimization'], axis_ranges=[[0, 1]] * 4,
+    #               axis_number_formating=['{:.0%}'] * 4,
+    #               # brush_criteria=brushing_robustness,
+    #               # size=(9, 3),
+    #               file_name=files_root_directory + 'robustness_paxis.svg')
 
     # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
     # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,
@@ -493,11 +506,12 @@ if __name__ == '__main__':
                                                             solutions=robust_for_all,
                                                             plot=True, n_trees=25, tree_depth=2)
 
-    # Only low and high WJLWTP had permitting times.
-    important_factors_multiple_solutions_plot(most_influential_factors_all,
-                                              lr_coef_all, 2,
-                                              create_labels_list(),
-                                              files_root_directory)
+
+    # # Only low and high WJLWTP had permitting times.
+    # important_factors_multiple_solutions_plot(most_influential_factors_all,
+    #                                           lr_coef_all, 2,
+    #                                           create_labels_list(),
+    #                                           files_root_directory)
 
     s = robust_for_all[0]
     utility_to_plot = 3
@@ -539,12 +553,12 @@ if __name__ == '__main__':
         convert_pathways_from_source_id_to_construction_id(utility_pathways_high,
                                                            construction_order)
 
-    plot_colormap_pathways(utility_pathways_high_copy, 2400, non_repeated_dec_var_ix[s], rdm_max,
-                           savefig_directory=files_root_directory,# + 'Figures/',
-                           nrealizations=1000,
-                           ninfra=ninfra, sources=sources,
-                           construction_order=construction_order,
-                           utility_name=name, year0=2015, suffix='high')
+    # plot_colormap_pathways(utility_pathways_high_copy, 2400, non_repeated_dec_var_ix[s], rdm_max,
+    #                        savefig_directory=files_root_directory,# + 'Figures/',
+    #                        nrealizations=1000,
+    #                        ninfra=ninfra, sources=sources,
+    #                        construction_order=construction_order,
+    #                        utility_name=name, year0=2015, suffix='high')
     # plot_2d_pathways(utility_pathways_high_copy, 2400, s, rdm_max, sources,
     #                  construction_order, ninfra=ninfra,
     #                  savefig_directory=files_root_directory + 'Figures/',
@@ -563,12 +577,12 @@ if __name__ == '__main__':
         convert_pathways_from_source_id_to_construction_id(utility_pathways_low,
                                                            construction_order)
 
-    plot_colormap_pathways(utility_pathways_low_copy, 2400, non_repeated_dec_var_ix[s], rdm_min,
-                           savefig_directory=files_root_directory,# + 'Figures/',
-                           nrealizations=1000,
-                           ninfra=ninfra, sources=sources,
-                           construction_order=construction_order,
-                           utility_name=name, year0=2015, suffix='low')
+    # plot_colormap_pathways(utility_pathways_low_copy, 2400, non_repeated_dec_var_ix[s], rdm_min,
+    #                        savefig_directory=files_root_directory,# + 'Figures/',
+    #                        nrealizations=1000,
+    #                        ninfra=ninfra, sources=sources,
+    #                        construction_order=construction_order,
+    #                        utility_name=name, year0=2015, suffix='low')
     # plot_2d_pathways(utility_pathways_low_copy, 2400, s, rdm_min, sources,
     #                  construction_order, ninfra=ninfra,
     #                  savefig_directory=files_root_directory + 'Figures/',
@@ -626,7 +640,8 @@ if __name__ == '__main__':
                  'ACFC': [0, 0.1],
                  'Long term\nROF': [0, 1],
                  'Jordan Lake\nAllocation': [0, 0.7]}
-    # plot_dec_vars_paxis(dec_vars_processed, (2, 3), max_mins)
+
+    plot_dec_vars_paxis(dec_vars_processed, (2, 3), max_mins)
 
     # gmm_cluster(dec_vars, files_root_directory)
 
