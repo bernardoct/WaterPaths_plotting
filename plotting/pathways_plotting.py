@@ -238,6 +238,106 @@ def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
                             '_unique' if len(lt_rof) > 0 else ''))
 
 
+def plot_2d_pathways_color_by_dynamic(pathways_utility, pathway_number, state_var_series, nweeks, s, rdm, sources,
+                     construction_order, savefig_directory='', ninfra=0,
+                     utility_name='', year0=0, monocromatic=False,
+                     lt_rof=()):
+    nrealizations = len(pathways_utility)
+
+    if len(lt_rof) == 0:
+        fig, ax = plt.subplots(figsize=(10, 5))
+    else:
+        fig, (ax, ax2) = plt.subplots(2, 1, figsize=(8.5, 5),
+                                      gridspec_kw={'height_ratios' : [3, 1],
+                                                   'hspace' : 0.3})
+        ax2.plot(lt_rof)
+        ax2.set_xlabel('Year', **{'fontname':'CMU Bright', 'size' : tick_font_size})
+        ax2.set_ylabel('Long-term ROF [-]', **{'fontname':'CMU Bright', 'size' : tick_font_size})
+        xticks_at = np.arange(0, nweeks, 52.1 * 5)
+        ax2.set_xticks(xticks_at)
+        ax2.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
+                            **{'fontname':'CMU Bright', 'size' : tick_font_size})
+        ax2.set_ylim(0, 0.2)
+        # ax2.set_yticklabels(list(ax2.get_yticklabels()),
+        #                     **{'fontname':'CMU Bright', 'size' : tick_font_size})
+
+    pathways = np.array([create_fixed_length_pathways_array(p[1], p[2], nweeks)
+                        for p in pathways_utility], dtype=float)[:, :-2]
+    cmap, normalize, bounds = create_cmap(pathways, ninfra+1)
+
+    horizontal_lines = []
+    vertical_lines = []
+    npath = 50
+
+    pathways_to_plot = [pathways_utility[i]
+                        for i in np.random.permutation(
+            range(nrealizations))[:npath]]
+
+    # Create lines for pathways chart
+    longest_pathway = 0
+    p = pathways_to_plot[pathway_number]
+    weeks = p[1]
+    infras = p[2] + 1
+    nconstructions = len(weeks)
+    if nconstructions > longest_pathway:
+        longest_pathway = nconstructions
+        print p[0][0]
+
+    # Create horizontal lines year by year
+    for w in range(0, weeks[0]):
+        horizontal_lines.append([[w, w+1], [0, 0]])
+
+    for i in range(nconstructions - 1):
+        for w in range(weeks[i], weeks[i+1]):
+            horizontal_lines.append([[w, w+1], [infras[i], infras[i]]])
+
+    for w in range(weeks[-1], nweeks):
+        horizontal_lines.append([[w, w+1], infras[-1], infras[-1]])
+
+    # Create vertical grey lines connecting horizontal lines
+    vertical_lines.append([[weeks[0], weeks[0]], [0, infras[0]]])
+    for i in range(1, nconstructions):
+        vertical_lines.append([[weeks[i], weeks[i]],
+                                   [infras[i - 1], infras[i]]])
+
+    # Plot vertical lines first, so that they're underneath horizontal ones
+    for line in vertical_lines:
+        # count += 1
+        # print '{}/{}'.format(count, nlines)
+        ax.plot(line[0], line[1], c='gray', lw=1)
+
+    # Plot horizontal lines
+    for line, color in zip(horizontal_lines, state_var_series):
+        # count += 1
+        # print '{}/{}'.format(count, nlines)
+        ax.plot(line[0], line[1], c=color, lw=3)
+
+    labels = [sources[-1]] + list(sources[construction_order])
+    ax.set_yticks(range(0, len(labels)))
+    ax.set_ylim(-0.1, 0.1 + ninfra)
+    ax.set_yticklabels(labels, **{'fontname':'CMU Bright', 'size' : tick_font_size})
+    ax.set_xlabel('Year', **{'fontname':'CMU Bright', 'size' : tick_font_size})
+    ax.set_ylabel('Infrastructure Option', **{'fontname':'CMU Bright', 'size' : tick_font_size})
+    xticks_at = np.arange(0, nweeks, 52.1 * 5)
+    ax.set_xticks(xticks_at)
+    ax.set_xticklabels((xticks_at / 52.1).astype(int) + year0, {'fontname':'CMU Bright', 'size' : tick_font_size})
+    ax.spines['top'].set_visible(False)
+    # ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    # ax.spines['left'].set_visible(False)
+    fig.subplots_adjust(left=0.4)
+
+    if savefig_directory == '':
+        plt.show()
+        pass
+    else:
+        plt.savefig(savefig_directory +
+                    'Pathways_s{}_RDM{}_{}{}{}_2d.svg'
+                    .format(s, rdm, utility_name,
+                            '_mono' if monocromatic else '',
+                            '_unique' if len(lt_rof) > 0 else ''))
+
+
 def plot_joyplot_pathways(pathways_utility, construction_order, nweeks, s, rdm,
                           savefig_directory=''):
 

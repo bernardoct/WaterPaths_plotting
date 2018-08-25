@@ -567,6 +567,10 @@ if __name__ == '__main__':
     #                  construction_order, ninfra=ninfra,
     #                  savefig_directory=files_root_directory + 'Figures/',
     #                  utility_name=name, year0=2015, monocromatic=True)
+    plot_2d_pathways_color_by_dynamic(utility_pathways_high_copy, 0, ,2400, s, rdm_max, sources,
+                     construction_order, ninfra=ninfra,
+                     savefig_directory=files_root_directory + 'Figures/',
+                     utility_name=name, year0=2015)
 
     pathways_list_utility_low = \
         get_pathways_by_utility_realization(pathways_all[1])
