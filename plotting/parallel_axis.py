@@ -56,7 +56,7 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=1.):
             np.multiply(not_brushed,
                         np.multiply(dataset[:, b] <= max(brush_criteria[b]),
                                     dataset[:, b] >= min(brush_criteria[b])))
-    alphas[[not c for c in not_brushed]] = 0.2
+    alphas[[not c for c in not_brushed]] = 0.07 * 150. / len(alphas)
 
     return alphas
 
@@ -69,6 +69,7 @@ def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
     for dataset, cmap in zip(datasets_mod, color_maps):
         alphas = __calculate_alphas(dataset, brush_criteria=brush_criteria,
                                     base_alpha=base_alpha)
+        print sum(alphas == base_alpha)
         dataset_normed = (dataset - data_min) \
                                / (data_max - data_min + 1e-8)
         dataset_color_values = (dataset - dataset.min(0)) \

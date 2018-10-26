@@ -88,7 +88,7 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     #     labels[most_influential_pair[0]], labels[most_influential_pair[1]]
     # )
 
-    ax = plt.subplot(111)
+    fig, ax = plt.subplots(figsize=(5, 4))
     ax.set_xlabel(labels[most_influential_pair[0]])
     ax.set_ylabel(labels[most_influential_pair[1]])
     ax.set_title('RDM for solution {}'.format(sol_number))
@@ -113,7 +113,8 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
 
     z = classifier.predict_proba(dummy_points)[:, 1]
     z = z.reshape(xx.shape)
-    cs = ax.contourf(xx, yy, 1. - z, 5, cmap=cmap, alpha=.4)
+    # cs = ax.contourf(xx, yy, 1. - z, 3, cmap=cmap, alpha=.7)
+    cs = ax.contourf(xx, yy, 1. - z, 3, colors=[cmap(0.10), cmap(0.32), cmap(0.78), cmap(0.9)], alpha=.5)
     # ax.contour(cs, levels=[0, 0.5, 1.], colors='r')
     ax.scatter(x_data[pass_fail], y_data[pass_fail],
                c='none', edgecolor=cmap(0.5 - from_middle), label='Pass', s=2)
