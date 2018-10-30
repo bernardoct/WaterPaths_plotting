@@ -14,6 +14,16 @@ def __basic_plot_formatting(ax):
     ax.get_yaxis().set_ticks([])
     ax.set_ylim(-0.02, 1.02)
 
+def __min_max_column_across_datasets(datasets, column):
+    n_datasets = len(datasets)
+
+    vmin = datasets[0][:, column].min()
+    vmax = datasets[0][:, column].max()
+    for i in range(1, n_datasets):
+        vmin = np.min([vmin, datasets[i][:, column].min()])
+        vmax = np.max([vmax, datasets[i][:, column].max()])
+
+    return [vmin, vmax]
 
 def __calculate_data_min_max(joint_dataset, columns, axis_ranges):
     if len(axis_ranges) == 0:
@@ -63,34 +73,60 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=1.):
 
 def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
                     color_column, x_axis, brush_criteria=dict(),
-                    base_alpha=0.5, lw=1.):
+                    base_alpha=0.5, lw=1., same_scale=False):
+
+    if same_scale:
+        color_min, color_max = __min_max_column_across_datasets(datasets_mod,
+                                                              color_column)
 
     # Plot data sets
+    i = 0
     for dataset, cmap in zip(datasets_mod, color_maps):
         alphas = __calculate_alphas(dataset, brush_criteria=brush_criteria,
                                     base_alpha=base_alpha)
-        print sum(alphas == base_alpha)
+
+        not_filtered = np.where(alphas==base_alpha)
+        print 'Dataset {} -- {}/{} solutions were not filtered: {}'\
+            .format(i, len(not_filtered), len(alphas), not_filtered)
+        i += 1
+
+        if not same_scale:
+            color_min, color_max = __min_max_column_across_datasets(
+                [dataset], color_column)
+
         dataset_normed = (dataset - data_min) \
                                / (data_max - data_min + 1e-8)
-        dataset_color_values = (dataset - dataset.min(0)) \
-                                / (dataset.ptp(0) + 1e-8)
+        dataset_color_values = (dataset[:, color_column] - color_min) \
+                                / (color_max - color_min + 1e-8)
 
         # Plot data
-        for d, dc, a in zip(dataset_normed, dataset_color_values, alphas):
-            ax.plot(x_axis, d[columns], c=cmap(dc[color_column]), alpha=a,
+        for d, c, a in zip(dataset_normed, dataset_color_values, alphas):
+            ax.plot(x_axis, d[columns], c=cmap(c), alpha=a,
                     lw=lw)
 
 
 def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
-                    invert, labels, fontname_body, fig):
+                    invert, labels, fontname_body, fig, same_scale=False,
+                    axis_number_formatting=[]):
+
+    if len(axis_number_formatting) == 0:
+        axis_number_formatting = ['{0:.2g}'] * len(labels)
+
     n_datasets = len(datasets)
+
+    if same_scale:
+        vmin, vmax = __min_max_column_across_datasets(datasets, color_column)
+        normalize = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
     cmap_axis = []
     for cmap, name, i in zip(color_maps, dataset_names, range(n_datasets)):
         # Set color bar auxiliary variables
         orientation = 'horizontal'
-        vmin = datasets[i][:, color_column].min()
-        vmax = datasets[i][:, color_column].max()
-        normalize = mcolors.Normalize(vmin=vmin, vmax=vmax)
+
+        if not same_scale:
+            vmin = datasets[i][:, color_column].min()
+            vmax = datasets[i][:, color_column].max()
+            normalize = mcolors.Normalize(vmin=vmin, vmax=vmax)
 
         # Reverse colormap is color_column is marked to be reversed.
         cmap_mod = cmap if invert[color_column] == 1 else cmap.reversed()
@@ -106,7 +142,8 @@ def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
                        **{'family': fontname_body})
 
         cbar.set_ticks([vmin, vmax])
-        cbar.set_ticklabels(['{0:.2g}'.format(vmin), '{0:.2g}'.format(vmax)])
+        cbar.set_ticklabels([axis_number_formatting[color_column].format(vmin),
+                             axis_number_formatting[color_column].format(vmax)])
 
         for l in cax.xaxis.get_ticklabels():
             l.set_family(fontname_body)
@@ -158,7 +195,7 @@ def parallel_axis(datasets, columns, color_column, color_maps,
                   fontname_title='Gill Sans MT',
                   fontname_body='CMU Bright', file_name='',
                   size=(9, 6), axis_to_invert=(), brush_criteria=dict(), lw=1.,
-                  axis_number_formating=[]):
+                  axis_number_formating=[], cbar_same_scale=False):
 
     datasets_mod = deepcopy(datasets)
     axis_ranges = np.array(axis_ranges)
@@ -191,12 +228,14 @@ def parallel_axis(datasets, columns, color_column, color_maps,
 
     # Plot Datasets
     __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
-                    color_column, x_axis, brush_criteria=brush_criteria, lw=lw, base_alpha=1.0)
+                    color_column, x_axis, brush_criteria=brush_criteria, lw=lw,
+                    base_alpha=1.0, same_scale=cbar_same_scale)
 
     # Add color bars
     cbar_axis = __add_color_bar(datasets, ax, dataset_names, color_maps,
                                 color_column, invert, axis_labels,
-                                fontname_body, fig)
+                                fontname_body, fig, same_scale=cbar_same_scale,
+                                axis_number_formatting=axis_number_formating)
 
     # Set numbers, axis labels, and axis spines
     __set_numbers_labels_axis(ax, fig, data_min, data_max, columns, invert,
