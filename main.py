@@ -13,6 +13,7 @@ from plotting.parallel_axis import __calculate_alphas
 from plotting.pathways_plotting import *
 from plotting.parallel_axis import *
 import os.path
+from copy import deepcopy
 
 from plotting.dec_vars_radar import plot_decvars_radar
 from plotting.robustness_bar_chart import pseudo_robustness_plot, important_factors_multiple_solutions_plot
@@ -490,10 +491,10 @@ if __name__ == '__main__':
                                                ['max', 'min', 'min', 'min',
                                                 'min', 'min'])
 
-    # Plot all parallel axis plots
-    plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped,
-                   objective_rdm_grouped, axis_labels,
-                   dataset_names, files_root_directory, n_wcu, axes_formating)
+    # # Plot all parallel axis plots
+    # plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped,
+    #                objective_rdm_grouped, axis_labels,
+    #                dataset_names, files_root_directory, n_wcu, axes_formating)
 
     # # Retrieve solutions that met brushing criteria
     # alphas = __calculate_alphas(objective_rdm_grouped, brush_criteria1,
@@ -507,46 +508,49 @@ if __name__ == '__main__':
                                                  objectives_by_solution,
                                                  non_crashed_by_solution,
                                                  rdm_factors,
-                                                 files_root_directory, utilities)
-    #
+                                                 files_root_directory,
+                                                 utilities)
+
     rob_beta = True
     robust_for_all, robustnesses_ordered_by_sol_id = \
-        get_robust_compromise_solutions(robustnesses, 0.75, beta=rob_beta)
-    #
-    # # PLOT APPROX. ROBUSTNESS BAR CHART
-    # # pseudo_robustness_plot(utilities, robustnesses,
-    # #                        [oranges_hc(0.4), blues_hc(0.4)],
-    # #                        files_root_directory, beta=True)
-    # # pseudo_robustness_plot(utilities, robustnesses,
-    # #                        [oranges_hc(0.4), blues_hc(0.4)],
-    # #                        files_root_directory, plot_du=False, beta=True)
-    # # pseudo_robustness_plot(utilities, robustnesses,
-    # #                        [oranges_hc(0.4), blues_hc(0.4)],
-    # #                        files_root_directory,
-    # #                        highlight_sols=robust_for_all, beta=rob_beta)
-    #
-    brushing_robustness = dict(zip(range(4), zip([1.1] * 4, robustnesses_ordered_by_sol_id[robust_for_all[0]] - 0.001)))
-    parallel_axis([robustnesses_ordered_by_sol_id[:n_wcu], robustnesses_ordered_by_sol_id[n_wcu:]], range(4), 1,
-                  [oranges_hc_r, blues_hc_r], utilities, 'Robustness',
-                  ['WCU Optimization', 'DU Optimization'], axis_ranges=[[0, 1]] * 4,
-                  axis_number_formating=['{:.0%}'] * 4,
-                  brush_criteria=brushing_robustness,
-                  size=(9, 4),
-                  file_name=files_root_directory + 'robustness_paxis.svg')
-    # parallel_axis([robustnesses_ordered_by_sol_id[:n_wcu]], range(4), 1,
-    #               [oranges_hc_r], utilities, 'Robustness Proxy',
-    #               ['WCU Optimization'], axis_ranges=[[0, 1]] * 4,
+        get_robust_compromise_solutions(robustnesses, 0.75)
+
+    np.savetxt(files_root_directory + 'robustnesses.csv',
+               robustnesses_ordered_by_sol_id, delimiter=',', header='OWASA,Durham,Cary,Raleigh')
+
+    most_robust_for_each = np.argmax(robustnesses_ordered_by_sol_id, axis=0)
+
+    hcm = cm.get_cmap('tab10').colors
+    colors_highlighted = [hcm[9], hcm[3], hcm[8], hcm[2]]
+
+    # PLOT APPROX. ROBUSTNESS BAR CHART
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory,
+    #                        beta=True)
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory,
+    #                        plot_du=False, beta=True)
+    most_robust_for_each[0] = 299
+    most_robust_for_each[2] = 351
+    utilities_labels = deepcopy(utilities)
+    utilities_labels[1] = 'Durham\n(Overall-performing solution)'
+    pseudo_robustness_plot(utilities, robustnesses,
+                           [oranges_hc(0.4), blues_hc(0.4)],
+                           files_root_directory,
+                           highlight_sols=most_robust_for_each,
+                           highlight_labels=utilities_labels,
+                           colors_highlighted=colors_highlighted)
+
+    # brushing_robustness = dict(zip(range(4), zip([1.1] * 4, robustnesses_ordered_by_sol_id[robust_for_all[0]] - 0.001)))
+    # parallel_axis([robustnesses_ordered_by_sol_id[:n_wcu], robustnesses_ordered_by_sol_id[n_wcu:]], range(4), 1,
+    #               [oranges_hc_r, blues_hc_r], utilities, 'Robustness',
+    #               ['WCU Optimization', 'DU Optimization'], axis_ranges=[[0, 1]] * 4,
     #               axis_number_formating=['{:.0%}'] * 4,
-    #               # brush_criteria=brushing_robustness,
-    #               # size=(9, 3),
-    #               file_name=files_root_directory + 'robustness_paxis_wcu.svg')
-    # parallel_axis([robustnesses_ordered_by_sol_id[n_wcu:]], range(4), 1,
-    #               [blues_hc_r], utilities, 'Robustness Proxy',
-    #               ['DU Optimization'], axis_ranges=[[0, 1]] * 4,
-    #               axis_number_formating=['{:.0%}'] * 4,
-    #               # brush_criteria=brushing_robustness,
-    #               # size=(9, 3),
-    #               file_name=files_root_directory + 'robustness_paxis_du.svg')
+    #               brush_criteria=brushing_robustness,
+    #               size=(9, 4),
+    #               file_name=files_root_directory + 'robustness_paxis.svg')
     #
     # # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
     # # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,
