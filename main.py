@@ -518,10 +518,10 @@ if __name__ == '__main__':
     np.savetxt(files_root_directory + 'robustnesses.csv',
                robustnesses_ordered_by_sol_id, delimiter=',', header='OWASA,Durham,Cary,Raleigh')
 
-    most_robust_for_each = np.argmax(robustnesses_ordered_by_sol_id, axis=0)
-
     hcm = cm.get_cmap('tab10').colors
-    colors_highlighted = [hcm[9], hcm[3], hcm[8], hcm[2]]
+    highlighted_colors = [hcm[9], hcm[3], hcm[8], hcm[2]]
+    most_robust_for_each = np.argmax(robustnesses_ordered_by_sol_id, axis=0)
+    highlighted_labels = ['O', 'D/B1', 'C/S', 'R/B2']
 
     # PLOT APPROX. ROBUSTNESS BAR CHART
     # pseudo_robustness_plot(utilities, robustnesses,
@@ -534,23 +534,27 @@ if __name__ == '__main__':
     #                        plot_du=False, beta=True)
     most_robust_for_each[0] = 299
     most_robust_for_each[2] = 351
+    most_robust_for_each_np = np.array(most_robust_for_each) - n_wcu
+    highlight_solutions = [{}, {'ids' : most_robust_for_each_np,
+                           'colors' : highlighted_colors,
+                           'labels' : highlighted_labels}]
+
     utilities_labels = deepcopy(utilities)
     utilities_labels[1] = 'Durham\n(Overall-performing solution)'
-    pseudo_robustness_plot(utilities, robustnesses,
-                           [oranges_hc(0.4), blues_hc(0.4)],
-                           files_root_directory,
-                           highlight_sols=most_robust_for_each,
-                           highlight_labels=utilities_labels,
-                           colors_highlighted=colors_highlighted)
+    # pseudo_robustness_plot(utilities, robustnesses,
+    #                        [oranges_hc(0.4), blues_hc(0.4)],
+    #                        files_root_directory,
+    #                        highlight_sols=highlight_solutions)
 
-    # brushing_robustness = dict(zip(range(4), zip([1.1] * 4, robustnesses_ordered_by_sol_id[robust_for_all[0]] - 0.001)))
-    # parallel_axis([robustnesses_ordered_by_sol_id[:n_wcu], robustnesses_ordered_by_sol_id[n_wcu:]], range(4), 1,
-    #               [oranges_hc_r, blues_hc_r], utilities, 'Robustness',
-    #               ['WCU Optimization', 'DU Optimization'], axis_ranges=[[0, 1]] * 4,
-    #               axis_number_formating=['{:.0%}'] * 4,
-    #               brush_criteria=brushing_robustness,
-    #               size=(9, 4),
-    #               file_name=files_root_directory + 'robustness_paxis.svg')
+    brushing_robustness = dict(zip(range(4), zip([1.1] * 4, robustnesses_ordered_by_sol_id[robust_for_all[0]] - 0.001)))
+    parallel_axis([robustnesses_ordered_by_sol_id[:n_wcu], robustnesses_ordered_by_sol_id[n_wcu:]], range(4), 1,
+                  [oranges_hc_r, blues_hc_r], utilities, 'Robustness',
+                  ['WCU Optimization', 'DU Optimization'], axis_ranges=[[0, 1]] * 4,
+                  axis_number_formating=['{:.0%}'] * 4,
+                  brush_criteria=brushing_robustness,
+                  size=(9, 4),
+                  file_name=files_root_directory + 'robustness_paxis.svg',
+                  highlight_solutions=highlight_solutions)
     #
     # # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
     # # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,

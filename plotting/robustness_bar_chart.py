@@ -4,15 +4,16 @@ import matplotlib.cm as cm
 
 def add_bubble_highlight(xy, color, text, ax, bar):
     (x, y) = xy
-    kwargs = {'fontname' : 'Gill Sans MT', 'color' : 'white', 'fontweight' : 'heavy'}
-    ax.annotate(text[0], xy=xy, xytext=(x, y + 0.25),
-                size=14, va="center",
+    kwargs = {'fontname' : 'Gill Sans MT', 'color' : 'white'}#, 'fontweight' : 'heavy'}
+    ax.annotate(text, xy=xy, xytext=(x, y + 0.25),
+                size=12, va="center",
                 bbox=dict(boxstyle="round", fc=color, ec="none"),
                 arrowprops=dict(arrowstyle="wedge, tail_width=1.",
                                 fc=color, ec="none", relpos=(0.5, 0.2),
                                   patchA=None), **kwargs)
 
-def highlight_bar(robustness, du_wcu_ix, rob_col, s, c, l, bars, comp_bars, axis):
+def highlight_bar(robustness, du_wcu_ix, rob_col, s, c, l, bars,
+                  comp_bars, axis):
     ix = np.where(robustness[du_wcu_ix, rob_col - 1] == s)[0][0]
     bar = bars[ix]
     bar.set_color(c)
@@ -22,14 +23,15 @@ def highlight_bar(robustness, du_wcu_ix, rob_col, s, c, l, bars, comp_bars, axis
 
 def pseudo_robustness_plot(utilities, robustnesses, colors,
                            files_root_directory, nwcu=259, beta=False,
-                           plot_du=True, highlight_sols=(), highlight_labels=(), colors_highlighted=()):
+                           plot_du=True, highlight_sols=None):
+    if highlight_sols is None:
+        highlight_sols = {'ids': [], 'labels': []}
+
     nutils = len(utilities)
     nsols = len(robustnesses[0])
     ndu = nsols - nwcu
     bar_width = 0.5
     rob_col = 3 if beta else 1
-    highlight_sols = (highlight_sols) if isinstance(highlight_sols, int) \
-        else highlight_sols
 
     fig, axes = plt.subplots(nutils, 1, figsize=(10, 6))
     plt.subplots_adjust(left=0.2)
@@ -55,8 +57,10 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
         axis.set_yticklabels(['0%', '50%', '100%'],
                              {'fontname':'CMU Bright', 'size': 13})
 
-        if len(highlight_sols) > 0:
-            for s, c, l in zip(highlight_sols, colors_highlighted, highlight_labels):
+        if len(highlight_sols['ids']) > 0:
+            for s, c, l in zip(highlight_sols['ids'],
+                               highlight_sols['colors'],
+                               highlight_sols['labels']):
                 if s < nwcu:
                     highlight_bar(robustness, wcu_ix, rob_col, s, c, l,
                                   bars_wcu, comp_bars, axis)
@@ -86,9 +90,9 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
     lines_labels = (('WCU\nOptimization', 'DU\nOptimization')
                     if type(bars_du) is not int else ('WCU'))
 
-    lines += tuple([comp_bars[i] for i in range(len(highlight_labels))])
+    lines += tuple([comp_bars[i] for i in range(len(highlight_sols['labels']))])
     if plot_du:
-        comp_labels = ['High Robustness\n{}'.format(l) for l in highlight_labels]
+        comp_labels = ['High Robustness\n{}'.format(l) for l in highlight_sols['labels']]
         lines_labels += tuple(comp_labels)
 
     legend = plt.figlegend(lines, lines_labels, 'lower center',
@@ -98,7 +102,7 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
     # axes[legend_in_axis].legend()
     plt.savefig(files_root_directory + 'robustness_rank_bars{}{}.svg'.format(
         '' if plot_du else '_no_du', ''
-        if len(highlight_sols) > 0 else '_compromise')
+        if len(['ids']) > 0 else '_compromise')
     )
 
     plt.show()

@@ -73,7 +73,13 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=1.):
 
 def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
                     color_column, x_axis, brush_criteria=dict(),
-                    base_alpha=0.5, lw=1., same_scale=False):
+                    base_alpha=0.5, lw=1., same_scale=False,
+                    highlight_sols=None):
+
+    n_datasets = len(datasets_mod)
+
+    if highlight_sols == None:
+        highlight_sols = [{'ids': [], 'colors': [], 'labels': []}] * n_datasets
 
     if same_scale:
         color_min, color_max = __min_max_column_across_datasets(datasets_mod,
@@ -81,7 +87,7 @@ def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
 
     # Plot data sets
     i = 0
-    for dataset, cmap in zip(datasets_mod, color_maps):
+    for dataset, cmap, h in zip(datasets_mod, color_maps, highlight_sols):
         alphas = __calculate_alphas(dataset, brush_criteria=brush_criteria,
                                     base_alpha=base_alpha)
 
@@ -103,6 +109,12 @@ def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
         for d, c, a in zip(dataset_normed, dataset_color_values, alphas):
             ax.plot(x_axis, d[columns], c=cmap(c), alpha=a,
                     lw=lw)
+
+        if len(h) > 0:
+            for s, c, l in zip(h['ids'], h['colors'], h['labels']):
+                ax.plot(x_axis, dataset[s, columns], c=c, lw=lw)
+
+
 
 
 def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
@@ -194,8 +206,9 @@ def parallel_axis(datasets, columns, color_column, color_maps,
                   axis_labels, title, dataset_names, axis_ranges=(),
                   fontname_title='Gill Sans MT',
                   fontname_body='CMU Bright', file_name='',
-                  size=(9, 6), axis_to_invert=(), brush_criteria=dict(), lw=1.,
-                  axis_number_formating=[], cbar_same_scale=False):
+                  size=(9, 6), axis_to_invert=(), brush_criteria={}, lw=1.,
+                  axis_number_formating=[], cbar_same_scale=False,
+                  highlight_solutions={}):
 
     datasets_mod = deepcopy(datasets)
     axis_ranges = np.array(axis_ranges)
@@ -229,7 +242,8 @@ def parallel_axis(datasets, columns, color_column, color_maps,
     # Plot Datasets
     __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
                     color_column, x_axis, brush_criteria=brush_criteria, lw=lw,
-                    base_alpha=1.0, same_scale=cbar_same_scale)
+                    base_alpha=1.0, same_scale=cbar_same_scale,
+                    highlight_sols=highlight_solutions)
 
     # Add color bars
     cbar_axis = __add_color_bar(datasets, ax, dataset_names, color_maps,
