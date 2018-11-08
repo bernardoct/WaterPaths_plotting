@@ -2,24 +2,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-def add_bubble_highlight(xy, color, text, ax, bar):
+def add_bubble_highlight(xy, color, text, ax):
     (x, y) = xy
     kwargs = {'fontname' : 'Gill Sans MT', 'color' : 'white'}#, 'fontweight' : 'heavy'}
-    ax.annotate(text, xy=xy, xytext=(x, y + 0.25),
+
+    dy = np.ptp(ax.get_ylim()) / 8. + ax.get_ylim()[0]
+    # dy = 0.25
+
+    ax.annotate(text, xy=xy, xytext=(x, y + dy),
                 size=12, va="center",
                 bbox=dict(boxstyle="round", fc=color, ec="none"),
                 arrowprops=dict(arrowstyle="wedge, tail_width=1.",
                                 fc=color, ec="none", relpos=(0.5, 0.2),
                                   patchA=None), **kwargs)
 
-def highlight_bar(robustness, du_wcu_ix, rob_col, s, c, l, bars,
-                  comp_bars, axis):
+def _highlight_bar(robustness, du_wcu_ix, rob_col, s, c, l, bars,
+                   comp_bars, axis):
     ix = np.where(robustness[du_wcu_ix, rob_col - 1] == s)[0][0]
     bar = bars[ix]
     bar.set_color(c)
     comp_bars.append(bar)
     (x, y) = bar.xy
-    add_bubble_highlight((x, y + bar._height), c, l, axis, bar)
+    add_bubble_highlight((x, y + bar._height), c, l, axis)
 
 def pseudo_robustness_plot(utilities, robustnesses, colors,
                            files_root_directory, nwcu=259, beta=False,
@@ -38,7 +42,8 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
 
     bars_wcu, bars_du = 0, 0
     comp_bars = []
-    for utility, robustness, axis in zip(utilities, robustnesses, axes):
+    for utility, robustness, axis in \
+            zip(utilities, robustnesses, axes):
         axis.set_ylabel(utility + '\n\nApproximate\nRobustness [-]',
                         **{'fontname':'CMU Bright', 'size' : 13})
         du_ix = robustness[:, rob_col - 1].astype(int) >= nwcu
@@ -57,17 +62,19 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
         axis.set_yticklabels(['0%', '50%', '100%'],
                              {'fontname':'CMU Bright', 'size': 13})
 
-        if len(highlight_sols['ids']) > 0:
-            for s, c, l in zip(highlight_sols['ids'],
-                               highlight_sols['colors'],
-                               highlight_sols['labels']):
-                if s < nwcu:
-                    highlight_bar(robustness, wcu_ix, rob_col, s, c, l,
-                                  bars_wcu, comp_bars, axis)
-                else:
-                    if plot_du:
-                        highlight_bar(robustness, du_ix, rob_col, s, c, l,
-                                      bars_du, comp_bars, axis)
+        if len(highlight_sols[0]) > 0:
+            for s, c, l in zip(highlight_sols[0]['ids'],
+                               highlight_sols[0]['colors'],
+                               highlight_sols[0]['labels']):
+                _highlight_bar(robustness, wcu_ix, rob_col, s, c, l,
+                                bars_wcu, comp_bars, axis)
+
+        if plot_du and len(highlight_sols[1]) > 0:
+            for s, c, l in zip(highlight_sols[1]['ids'],
+                               highlight_sols[1]['colors'],
+                               highlight_sols[1]['labels']):
+                _highlight_bar(robustness, du_ix, rob_col, s + nwcu, c, l,
+                                bars_du, comp_bars, axis)
 
         # axis.spines['top'].set_visible(False)
         axis.spines['right'].set_visible(False)
@@ -90,10 +97,10 @@ def pseudo_robustness_plot(utilities, robustnesses, colors,
     lines_labels = (('WCU\nOptimization', 'DU\nOptimization')
                     if type(bars_du) is not int else ('WCU'))
 
-    lines += tuple([comp_bars[i] for i in range(len(highlight_sols['labels']))])
-    if plot_du:
-        comp_labels = ['High Robustness\n{}'.format(l) for l in highlight_sols['labels']]
-        lines_labels += tuple(comp_labels)
+    lines += tuple(comp_bars)
+    for h in highlight_sols:
+        if len(h) > 0:
+            lines_labels += tuple(h['labels'])
 
     legend = plt.figlegend(lines, lines_labels, 'lower center',
                            bbox_to_anchor=(0.5, -0.01), ncol=len(lines))

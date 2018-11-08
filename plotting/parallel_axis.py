@@ -3,6 +3,9 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from matplotlib import colorbar
 from copy import deepcopy
+
+from plotting.robustness_bar_chart import add_bubble_highlight
+
 plt.rcParams['svg.fonttype'] = 'none'
 
 def __basic_plot_formatting(ax):
@@ -202,13 +205,33 @@ def __set_numbers_labels_axis(ax, fig, data_min, data_max, columns, invert,
                 c='black', alpha=0.3, lw=0.2)
 
 
+def __add_highlight_labels(datasets, ax, highlight_solutions, after_col=0):
+
+    for d, h in zip(datasets, highlight_solutions):
+        if len(h) > 0:
+            if after_col > 0:
+                label_cols = range(after_col, d.shape[1] - 1)
+            else:
+                label_cols = []
+
+            while len(label_cols) < len(h['ids']):
+                label_cols += range(d.shape[1] - 1)
+
+            for s, c, l, lc in zip(h['ids'], h['colors'], h['labels'], label_cols):
+                add_bubble_highlight(
+                    (0.5 + lc, np.mean([d[s, lc], d[s, lc + 1]])),
+                    c, l, ax)
+
+    i = 0
+
+
 def parallel_axis(datasets, columns, color_column, color_maps,
                   axis_labels, title, dataset_names, axis_ranges=(),
                   fontname_title='Gill Sans MT',
                   fontname_body='CMU Bright', file_name='',
                   size=(9, 6), axis_to_invert=(), brush_criteria={}, lw=1.,
                   axis_number_formating=[], cbar_same_scale=False,
-                  highlight_solutions={}):
+                  highlight_solutions={}, labels_after_col=0):
 
     datasets_mod = deepcopy(datasets)
     axis_ranges = np.array(axis_ranges)
@@ -244,6 +267,9 @@ def parallel_axis(datasets, columns, color_column, color_maps,
                     color_column, x_axis, brush_criteria=brush_criteria, lw=lw,
                     base_alpha=1.0, same_scale=cbar_same_scale,
                     highlight_sols=highlight_solutions)
+
+    __add_highlight_labels(datasets_mod, ax, highlight_solutions,
+                           after_col=labels_after_col)
 
     # Add color bars
     cbar_axis = __add_color_bar(datasets, ax, dataset_names, color_maps,

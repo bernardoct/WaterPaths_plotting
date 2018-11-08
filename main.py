@@ -543,18 +543,20 @@ if __name__ == '__main__':
     utilities_labels[1] = 'Durham\n(Overall-performing solution)'
     # pseudo_robustness_plot(utilities, robustnesses,
     #                        [oranges_hc(0.4), blues_hc(0.4)],
-    #                        files_root_directory,
+    #                        files_root_directory, nwcu=n_wcu,
     #                        highlight_sols=highlight_solutions)
 
     brushing_robustness = dict(zip(range(4), zip([1.1] * 4, robustnesses_ordered_by_sol_id[robust_for_all[0]] - 0.001)))
     parallel_axis([robustnesses_ordered_by_sol_id[:n_wcu], robustnesses_ordered_by_sol_id[n_wcu:]], range(4), 1,
                   [oranges_hc_r, blues_hc_r], utilities, 'Robustness',
-                  ['WCU Optimization', 'DU Optimization'], axis_ranges=[[0, 1]] * 4,
+                  ['WCU Optimization', 'DU Optimization'],
+                  axis_ranges=[[0, 1]] * 4,
                   axis_number_formating=['{:.0%}'] * 4,
                   brush_criteria=brushing_robustness,
                   size=(9, 4),
                   file_name=files_root_directory + 'robustness_paxis.svg',
-                  highlight_solutions=highlight_solutions)
+                  highlight_solutions=highlight_solutions,
+                  labels_after_col=1)
     #
     # # most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
     # # lr_coef_all = get_influential_rdm_factors_logistic_regression(objectives_by_solution,
