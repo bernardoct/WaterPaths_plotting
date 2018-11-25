@@ -89,9 +89,12 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     # )
 
     fig, ax = plt.subplots(figsize=(5, 4))
-    ax.set_xlabel(labels[most_influential_pair[0]])
-    ax.set_ylabel(labels[most_influential_pair[1]])
-    ax.set_title('RDM for solution {}'.format(sol_number))
+    ax.set_xlabel(labels[most_influential_pair[0]],
+                       {'fontname': 'Open Sans Condensed', 'size': 12})
+    ax.set_ylabel(labels[most_influential_pair[1]],
+                       {'fontname': 'Open Sans Condensed', 'size': 12})
+    ax.set_title('RDM for solution {}'.format(sol_number),
+                       {'fontname': 'Gill Sans MT', 'size': 14})
 
     # Add legend and shrink current axis by 20% so that legend is not
     # outside plot.
@@ -104,8 +107,8 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     x_min, x_max = (x_data.min(), x_data.max())
     y_min, y_max = (y_data.min(), y_data.max())
 
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, (x_max - x_min) / 100),
-                         np.arange(y_min, y_max, (y_max - y_min) / 100))
+    xx, yy = np.meshgrid(np.arange(x_min, x_max * 1.001, (x_max - x_min) / 100),
+                         np.arange(y_min, y_max * 1.001, (y_max - y_min) / 100))
 
     dummy_points = np.ones((len(xx.ravel()), len(most_influential_factors)))
     dummy_points[:, most_influential_pair[0]] = xx.ravel()
@@ -114,19 +117,49 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     z = classifier.predict_proba(dummy_points)[:, 1]
     z = z.reshape(xx.shape)
     # cs = ax.contourf(xx, yy, 1. - z, 3, cmap=cmap, alpha=.7)
-    cs = ax.contourf(xx, yy, 1. - z, 3, colors=[cmap(0.10), cmap(0.32), cmap(0.78), cmap(0.9)], alpha=.5)
+    cs = ax.contourf(xx, yy, 1. - z, 3,
+                     colors=[cmap(0.10), cmap(0.32), cmap(0.78), cmap(0.9)],
+                     alpha=.5)
     # ax.contour(cs, levels=[0, 0.5, 1.], colors='r')
     ax.scatter(x_data[pass_fail], y_data[pass_fail],
                c='none', edgecolor=cmap(0.5 - from_middle), label='Pass', s=2)
     ax.scatter(x_data[pass_fail == False], y_data[pass_fail == False],
                c='none', edgecolor=cmap(0.5 + from_middle), label='Fail', s=2)
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),
+              prop={'family': 'Open Sans Condensed', 'size': 12})
+
+    xlims = np.array([np.around(xx.min(), 2), np.around(xx.max(), 2)])
+    ylims = np.array([np.around(yy.min(), 2), np.around(yy.max(), 2)])
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    ndivs = 4
+    xticks = [xlims[0] + xlims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
+             + [xlims[1]]
+    xtick_labels = ['{}%'.format(p * 100) for p in xticks]
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xtick_labels,
+                       {'fontname': 'Open Sans Condensed', 'size': 11})
+
+    ndivs = 6
+    yticks = [ylims[0] + ylims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
+             + [ylims[1]]
+    ytick_labels = ['{}%'.format(p * 100) for p in yticks]
+    ax.set_yticks(yticks)
+    ax.set_yticklabels(ytick_labels,
+                       {'fontname': 'Open Sans Condensed', 'size': 11})
+
+    plt.show()
 
     if len(files_root_directory) > 0:
         plt.savefig('{}/scenario_discovery_solution_{}.svg'.format(files_root_directory, sol_number))
-        plt.clf()
-        plt.close()
+        # plt.clf()
+        # plt.close()
     else:
         plt.show()
-        plt.clf()
-        plt.close()
+        # plt.clf()
+        # plt.close()

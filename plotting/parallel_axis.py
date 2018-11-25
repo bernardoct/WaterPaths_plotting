@@ -69,14 +69,14 @@ def __calculate_alphas(dataset, brush_criteria=dict(), base_alpha=1.):
             np.multiply(not_brushed,
                         np.multiply(dataset[:, b] <= max(brush_criteria[b]),
                                     dataset[:, b] >= min(brush_criteria[b])))
-    alphas[[not c for c in not_brushed]] = 0.07 * 150. / len(alphas)
+    alphas[[not c for c in not_brushed]] = 0.05 # 0.07  * 150. / len(alphas)
 
     return alphas
 
 
 def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
                     color_column, x_axis, brush_criteria=dict(),
-                    base_alpha=0.5, lw=1., same_scale=False,
+                    base_alpha=1.0, lw=1., same_scale=False,
                     highlight_sols=None):
 
     n_datasets = len(datasets_mod)
@@ -90,6 +90,7 @@ def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
 
     # Plot data sets
     i = 0
+    dataset_normed_return = []
     for dataset, cmap, h in zip(datasets_mod, color_maps, highlight_sols):
         alphas = __calculate_alphas(dataset, brush_criteria=brush_criteria,
                                     base_alpha=base_alpha)
@@ -105,19 +106,19 @@ def __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
 
         dataset_normed = (dataset - data_min) \
                                / (data_max - data_min + 1e-8)
+        dataset_normed_return.append(dataset_normed)
         dataset_color_values = (dataset[:, color_column] - color_min) \
                                 / (color_max - color_min + 1e-8)
 
         # Plot data
         for d, c, a in zip(dataset_normed, dataset_color_values, alphas):
-            ax.plot(x_axis, d[columns], c=cmap(c), alpha=a,
-                    lw=lw)
+            ax.plot(x_axis, d[columns], c=cmap(c), alpha=a, lw=lw)
 
         if len(h) > 0:
             for s, c, l in zip(h['ids'], h['colors'], h['labels']):
-                ax.plot(x_axis, dataset[s, columns], c=c, lw=lw)
+                ax.plot(x_axis, dataset_normed[s, columns], c=c, lw=lw + 1)
 
-
+    return dataset_normed_return
 
 
 def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
@@ -184,7 +185,8 @@ def __add_color_bar(datasets, ax, dataset_names, color_maps, color_column,
 
 
 def __set_numbers_labels_axis(ax, fig, data_min, data_max, columns, invert,
-                              labels, x_axis, plot_font, axis_number_formating=[]):
+                              labels, x_axis, plot_font,
+                              axis_number_formating=[]):
     if len(axis_number_formating) == 0:
         axis_number_formating = ['{0:.2g}'] * len(x_axis)
 
@@ -205,33 +207,34 @@ def __set_numbers_labels_axis(ax, fig, data_min, data_max, columns, invert,
                 c='black', alpha=0.3, lw=0.2)
 
 
-def __add_highlight_labels(datasets, ax, highlight_solutions, after_col=0):
+def __add_highlight_labels(datasets, ax, highlight_sols=None, after_col=0):
 
-    for d, h in zip(datasets, highlight_solutions):
-        if len(h) > 0:
-            if after_col > 0:
-                label_cols = range(after_col, d.shape[1] - 1)
-            else:
-                label_cols = []
+    if highlight_sols != None:
+        for d, h in zip(datasets, highlight_sols):
+            if len(h) > 0:
 
-            while len(label_cols) < len(h['ids']):
-                label_cols += range(d.shape[1] - 1)
+                if after_col >= 0:
+                    label_cols = range(after_col, d.shape[1] - 1)
+                else:
+                    label_cols = []
 
-            for s, c, l, lc in zip(h['ids'], h['colors'], h['labels'], label_cols):
-                add_bubble_highlight(
-                    (0.5 + lc, np.mean([d[s, lc], d[s, lc + 1]])),
-                    c, l, ax)
+                while len(label_cols) < len(h['ids']):
+                    label_cols += range(d.shape[1] - 1)
 
-    i = 0
+                for s, c, l, lc in zip(h['ids'], h['colors'], h['labels'],
+                                       label_cols):
+                    add_bubble_highlight(
+                        (0.5 + lc, np.mean([d[s, lc], d[s, lc + 1]])),
+                        c, l, ax)
 
 
 def parallel_axis(datasets, columns, color_column, color_maps,
                   axis_labels, title, dataset_names, axis_ranges=(),
                   fontname_title='Gill Sans MT',
-                  fontname_body='CMU Bright', file_name='',
+                  fontname_body='Open Sans Condensed', file_name='',
                   size=(9, 6), axis_to_invert=(), brush_criteria={}, lw=1.,
                   axis_number_formating=[], cbar_same_scale=False,
-                  highlight_solutions={}, labels_after_col=0):
+                  highlight_solutions=None, labels_after_col=0):
 
     datasets_mod = deepcopy(datasets)
     axis_ranges = np.array(axis_ranges)
@@ -263,12 +266,13 @@ def parallel_axis(datasets, columns, color_column, color_maps,
                                                   axis_ranges)
 
     # Plot Datasets
-    __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
+    datasets_normed = __plot_datasets(datasets_mod, ax, data_min, data_max, color_maps, columns,
                     color_column, x_axis, brush_criteria=brush_criteria, lw=lw,
-                    base_alpha=1.0, same_scale=cbar_same_scale,
+                    same_scale=cbar_same_scale,
                     highlight_sols=highlight_solutions)
 
-    __add_highlight_labels(datasets_mod, ax, highlight_solutions,
+    __add_highlight_labels(datasets_normed, ax,
+                           highlight_sols=highlight_solutions,
                            after_col=labels_after_col)
 
     # Add color bars
