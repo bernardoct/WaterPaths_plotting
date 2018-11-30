@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier
 
 from data_transformation.process_rdm_objectives import create_labels_list
 from sklearn.linear_model import LogisticRegression
@@ -60,9 +62,10 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number
 
     if len(np.unique(pass_fail)) == 2:
         # Perform logistic regression on rdm factors and pass/fail labels
-        gbc = GradientBoostingClassifier(n_estimators=n_trees,
-                                         learning_rate=0.1,
-                                         max_depth=tree_depth)
+        # gbc = GradientBoostingClassifier(n_estimators=n_trees,
+        #                                  learning_rate=0.1,
+        #                                  max_depth=tree_depth)
+        gbc = RandomForestClassifier(n_estimators=n_trees, n_jobs=2)
         gbc.fit(non_crashed_rdm, pass_fail)
 
         # get most influential pair of factors

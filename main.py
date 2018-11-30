@@ -407,10 +407,10 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution,
 
 
 if __name__ == '__main__':
-    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-    #                        'rdm_results/'
-    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
                            'rdm_results/'
+    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    #                        'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -634,16 +634,16 @@ if __name__ == '__main__':
     #                                                               (0, 1, 4), rdm_factors,
     #                                                               solutions=robust_for_all,
     #                                                               plot=True)
-
-    ntrees = 70
-    tree_depth = 3
+    # for robust_for_all in [most_robust_for_each[1], most_robust_for_each[3]]:
+    ntrees = 7000
+    tree_depth = 4
     most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
     lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
                                                             non_crashed_by_solution,
                                                             performance_criteria,
                                                             files_root_directory,
                                                             apply_criteria_on_objs, rdm_factors,
-                                                            solutions=robust_for_all,
+                                                            solutions=[most_robust_for_each[1], most_robust_for_each[3]],
                                                             plot=True,
                                                             n_trees=ntrees,
                                                             tree_depth=tree_depth)
@@ -655,7 +655,7 @@ if __name__ == '__main__':
                                                                   files_root_directory,
                                                                   np.array(apply_criteria_on_objs) + i * 6, rdm_factors,
                                                                   not_group_objectives=True,
-                                                                  solutions=robust_for_all,
+                                                                  solutions=[most_robust_for_each[1], most_robust_for_each[3]],
                                                                   plot=True,
                                                                   n_trees=ntrees,
                                                                   tree_depth=tree_depth,
