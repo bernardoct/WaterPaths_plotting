@@ -105,7 +105,7 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashe
                                               performance_criteria, files_root_directory,
                                               apply_criteria_on_objs, rdm_factors,
                                               not_group_objectives=False, solutions=(),
-                                              n_trees=100, tree_depth=2, plot=False):
+                                              n_trees=100, tree_depth=2, plot=False, name_suffix=''):
 
     nsols = len(objectives_by_solution)
     if len(solutions) == 0:
@@ -117,7 +117,7 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashe
     for sol_number in solutions:
         # Load RDM files in a single table
 
-        print 'Performing scenario discovery for solution {}'.format(sol_number)
+        print 'Performing scenario discovery for solution {}{}'.format(sol_number, name_suffix)
 
         if not_group_objectives:
             objectives = objectives_by_solution[sol_number][:, apply_criteria_on_objs]
@@ -137,7 +137,8 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashe
                 rdm_factors[non_crashed_by_solution[sol_number]],
                 sol_number, performance_criteria,
                 plot=plot, n_trees=n_trees, tree_depth=tree_depth,
-                files_root_directory=files_root_directory if plot else ''
+                files_root_directory=files_root_directory if plot else '',
+                name_suffix=name_suffix
             )
 
         most_influential_factors_all.append(most_influential_factors)

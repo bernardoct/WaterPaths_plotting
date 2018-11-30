@@ -407,10 +407,10 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution,
 
 
 if __name__ == '__main__':
-    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-                           'rdm_results/'
-    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
     #                        'rdm_results/'
+    files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
+                           'rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -450,7 +450,7 @@ if __name__ == '__main__':
 
     # Look for repeated solutions -- ix is index of non-repeated
     dec_vars, objectives_rdm, non_repeated_dec_var_ix = check_repeated(dec_vars_raw[:, :-6],
-                                                  dec_vars_raw[:, -6:])
+                                                                       dec_vars_raw[:, -6:])
 
     n_wcu = sum(non_repeated_dec_var_ix < 249)
 
@@ -567,9 +567,9 @@ if __name__ == '__main__':
     most_robust_for_each[2] = 351
     most_robust_for_each_np = np.array(most_robust_for_each) - n_wcu
     print most_robust_for_each
-    highlight_solutions = [{}, {'ids' : most_robust_for_each_np,
-                           'colors' : highlighted_colors,
-                           'labels' : highlighted_labels}]
+    highlight_solutions = [{}, {'ids': most_robust_for_each_np,
+                                'colors': highlighted_colors,
+                                'labels': highlighted_labels}]
     # highlight_solutions_rob_compromise = [{}, {'ids' : [270],
     #                        'colors' : [highlighted_colors[3]],
     #                        'labels' : ['RC']}]
@@ -634,6 +634,9 @@ if __name__ == '__main__':
     #                                                               (0, 1, 4), rdm_factors,
     #                                                               solutions=robust_for_all,
     #                                                               plot=True)
+
+    ntrees = 70
+    tree_depth = 3
     most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
     lr_coef_all = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
                                                             non_crashed_by_solution,
@@ -642,25 +645,38 @@ if __name__ == '__main__':
                                                             apply_criteria_on_objs, rdm_factors,
                                                             solutions=robust_for_all,
                                                             plot=True,
-                                                            n_trees=25,
-                                                            tree_depth=2)
+                                                            n_trees=ntrees,
+                                                            tree_depth=tree_depth)
+    for i in range(len(utilities)):
+        most_influential_factors_all_u, pass_fail_all_u, non_crashed_rdm_all_u, \
+        lr_coef_all_u = get_influential_rdm_factors_boosted_trees(objectives_by_solution,
+                                                                  non_crashed_by_solution,
+                                                                  performance_criteria,
+                                                                  files_root_directory,
+                                                                  np.array(apply_criteria_on_objs) + i * 6, rdm_factors,
+                                                                  not_group_objectives=True,
+                                                                  solutions=robust_for_all,
+                                                                  plot=True,
+                                                                  n_trees=ntrees,
+                                                                  tree_depth=tree_depth,
+                                                                  name_suffix=utilities[i])
 
-    # Only low and high WJLWTP had permitting times.
-    important_factors_multiple_solutions_plot(most_influential_factors_all,
-                                              lr_coef_all, 2,
-                                              create_labels_list(),
-                                              files_root_directory)
+    # # Only low and high WJLWTP had permitting times.
+    # important_factors_multiple_solutions_plot(most_influential_factors_all,
+    #                                           lr_coef_all, 2,
+    #                                           create_labels_list(),
+    #                                           files_root_directory)
 
-    s = robust_for_all[0]
-    utility_to_plot = 3
-    realization_to_plot = 13
-    ninfra_mono = 5
-    ninfra = np.array([0, 6, 0, 4])[utility_to_plot]
-    name = np.array(utilities)[utility_to_plot]
-
-    most_influential_factors = most_influential_factors_all[0]
-    rdm_max = np.argmax(rdm_factors[:, most_influential_factors[-1]])
-    rdm_min = np.argmin(rdm_factors[:, most_influential_factors[-1]])
+    # s = robust_for_all[0]
+    # utility_to_plot = 3
+    # realization_to_plot = 13
+    # ninfra_mono = 5
+    # ninfra = np.array([0, 6, 0, 4])[utility_to_plot]
+    # name = np.array(utilities)[utility_to_plot]
+    #
+    # most_influential_factors = most_influential_factors_all[0]
+    # rdm_max = np.argmax(rdm_factors[:, most_influential_factors[-1]])
+    # rdm_min = np.argmin(rdm_factors[:, most_influential_factors[-1]])
     # rdm_mono = rdm_max
     #
     # pathways_all = load_pathways_solution(files_root_directory +

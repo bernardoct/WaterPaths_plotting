@@ -53,7 +53,7 @@ def logistic_regression_classification(objectives_by_solution, rdm_factors, sol_
 def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number,
                                  performance_criteria, plot=False,
                                  n_trees=100, tree_depth=3,
-                                 files_root_directory=''):
+                                 files_root_directory='', name_suffix= ''):
     non_crashed_rdm, pass_fail, nrdms = \
         prepare_data_for_classification(objectives_by_solution, rdm_factors,
                                         performance_criteria)
@@ -70,7 +70,8 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number
 
         if plot:
             logistic_regression_plot(most_influential_factors, pass_fail,
-                                     non_crashed_rdm, sol_number, gbc, files_root_directory=files_root_directory)
+                                     non_crashed_rdm, sol_number, gbc, files_root_directory=files_root_directory,
+                                     name_suffix=name_suffix)
         return most_influential_factors, pass_fail, non_crashed_rdm, gbc.feature_importances_
     else:
         return -np.ones(nrdms, dtype=int), pass_fail, \
@@ -79,7 +80,7 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number
 
 def logistic_regression_plot(most_influential_factors, pass_fail,
                              non_crashed_rdm, sol_number, classifier,
-                             cmap=cm.get_cmap('coolwarm'), from_middle=0.35, files_root_directory=''):
+                             cmap=cm.get_cmap('coolwarm'), from_middle=0.35, files_root_directory='', name_suffix=''):
     most_influential_pair = most_influential_factors[-2:]
 
     # plot logistic regression
@@ -93,8 +94,8 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
                        {'fontname': 'Open Sans Condensed', 'size': 12})
     ax.set_ylabel(labels[most_influential_pair[1]],
                        {'fontname': 'Open Sans Condensed', 'size': 12})
-    ax.set_title('RDM for solution {}'.format(sol_number),
-                       {'fontname': 'Gill Sans MT', 'size': 14})
+    ax.set_title('RDM for Solution {} {}'.format(sol_number, name_suffix),
+                       {'fontname': 'Gill Sans MT', 'size': 16})
 
     # Add legend and shrink current axis by 20% so that legend is not
     # outside plot.
@@ -117,8 +118,8 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     z = classifier.predict_proba(dummy_points)[:, 1]
     z = z.reshape(xx.shape)
     # cs = ax.contourf(xx, yy, 1. - z, 3, cmap=cmap, alpha=.7)
-    cs = ax.contourf(xx, yy, 1. - z, 3,
-                     colors=[cmap(0.10), cmap(0.32), cmap(0.78), cmap(0.9)],
+    cs = ax.contourf(xx, yy, 1. - z, 2,
+                     colors=[cmap(0.10), cmap(0.5), cmap(0.9)], #cmap(0.32), cmap(0.78), cmap(0.9)],
                      alpha=.5)
     # ax.contour(cs, levels=[0, 0.5, 1.], colors='r')
     ax.scatter(x_data[pass_fail], y_data[pass_fail],
@@ -153,12 +154,12 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     ax.set_yticklabels(ytick_labels,
                        {'fontname': 'Open Sans Condensed', 'size': 11})
 
-    plt.show()
+    # plt.show()
 
     if len(files_root_directory) > 0:
-        plt.savefig('{}/scenario_discovery_solution_{}.svg'.format(files_root_directory, sol_number))
-        # plt.clf()
-        # plt.close()
+        plt.savefig('{}/scenario_discovery_solution_{}_{}.png'.format(files_root_directory, sol_number, name_suffix))
+        plt.clf()
+        plt.close()
     else:
         plt.show()
         # plt.clf()
