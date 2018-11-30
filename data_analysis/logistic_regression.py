@@ -4,9 +4,11 @@ from matplotlib import cm
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
-
+from sklearn.decomposition import PCA
+from pyDOE import lhs
 from data_transformation.process_rdm_objectives import create_labels_list
 from sklearn.linear_model import LogisticRegression
+from copy import deepcopy
 
 CRASHED_OBJ_VALUE = 10000
 
@@ -55,7 +57,7 @@ def logistic_regression_classification(objectives_by_solution, rdm_factors, sol_
 def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number,
                                  performance_criteria, plot=False,
                                  n_trees=100, tree_depth=3,
-                                 files_root_directory='', name_suffix= ''):
+                                 files_root_directory='', name_suffix=''):
     non_crashed_rdm, pass_fail, nrdms = \
         prepare_data_for_classification(objectives_by_solution, rdm_factors,
                                         performance_criteria)
@@ -65,10 +67,11 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors, sol_number
         # gbc = GradientBoostingClassifier(n_estimators=n_trees,
         #                                  learning_rate=0.1,
         #                                  max_depth=tree_depth)
-        gbc = RandomForestClassifier(n_estimators=n_trees, n_jobs=2)
+        gbc = RandomForestClassifier(n_estimators=n_trees, n_jobs=4, warm_start=True)
         gbc.fit(non_crashed_rdm, pass_fail)
 
         # get most influential pair of factors
+        features_importances = deepcopy(gbc.feature_importances_)
         most_influential_factors = np.argsort(gbc.feature_importances_)
 
         if plot:
@@ -93,9 +96,9 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     # )
 
     fig, ax = plt.subplots(figsize=(5, 4))
-    ax.set_xlabel(labels[most_influential_pair[0]],
+    ax.set_xlabel('{} ({})%'.format(labels[most_influential_pair[0]], classifier.feature_importances_[most_influential_pair[0]]*100),
                        {'fontname': 'Open Sans Condensed', 'size': 12})
-    ax.set_ylabel(labels[most_influential_pair[1]],
+    ax.set_ylabel('{} ({})%'.format(labels[most_influential_pair[0]], classifier.feature_importances_[most_influential_pair[1]]*100),
                        {'fontname': 'Open Sans Condensed', 'size': 12})
     ax.set_title('RDM for Solution {} {}'.format(sol_number, name_suffix),
                        {'fontname': 'Gill Sans MT', 'size': 16})
@@ -121,14 +124,14 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     z = classifier.predict_proba(dummy_points)[:, 1]
     z = z.reshape(xx.shape)
     # cs = ax.contourf(xx, yy, 1. - z, 3, cmap=cmap, alpha=.7)
-    cs = ax.contourf(xx, yy, 1. - z, 2,
-                     colors=[cmap(0.10), cmap(0.5), cmap(0.9)], #cmap(0.32), cmap(0.78), cmap(0.9)],
-                     alpha=.5)
+    # cs = ax.contourf(xx, yy, 1. - z, 2,
+    #                  colors=[cmap(0.10), cmap(0.5), cmap(0.9)], #cmap(0.32), cmap(0.78), cmap(0.9)],
+    #                  alpha=.5)
     # ax.contour(cs, levels=[0, 0.5, 1.], colors='r')
     ax.scatter(x_data[pass_fail], y_data[pass_fail],
-               c='none', edgecolor=cmap(0.5 - from_middle), label='Pass', s=2)
+               c=cmap(0.5 - from_middle), edgecolor=cmap(0.5 - from_middle), label='Pass', s=10)
     ax.scatter(x_data[pass_fail == False], y_data[pass_fail == False],
-               c='none', edgecolor=cmap(0.5 + from_middle), label='Fail', s=2)
+               c=cmap(0.5 + from_middle), edgecolor=cmap(0.5 + from_middle), label='Fail', s=10)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),
               prop={'family': 'Open Sans Condensed', 'size': 12})
 
@@ -160,7 +163,7 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     # plt.show()
 
     if len(files_root_directory) > 0:
-        plt.savefig('{}/scenario_discovery_solution_{}_{}.png'.format(files_root_directory, sol_number, name_suffix))
+        plt.savefig('{}/scenario_discovery_solution_{}_{}.svg'.format(files_root_directory, sol_number, name_suffix))
         plt.clf()
         plt.close()
     else:
