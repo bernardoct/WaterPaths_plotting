@@ -130,7 +130,7 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashe
 
         # objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
 
-        most_influential_factors, pass_fail, non_crashed_rdm, lr_coef = \
+        most_influential_factors, pass_fail, non_crashed_rdm, lr_coef, ax = \
             boosted_trees_classification(
                 objectives,
                 # objectives_normalized,
@@ -147,7 +147,7 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashe
         lr_coef_all.append(lr_coef)
 
     return most_influential_factors_all, pass_fail_all, \
-           non_crashed_rdm_all, lr_coef_all
+           non_crashed_rdm_all, lr_coef_all, ax
 
 
 def influential_factors_plot(objectives_by_solution, non_crashed_by_solution,

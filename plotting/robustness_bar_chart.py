@@ -142,7 +142,7 @@ def important_factors_multiple_solutions_plot(most_influential_factors_all,
 
     fig, axes = plt.subplots(1, nsols, sharey=True, sharex=True,
                              figsize=(4.6, 3.5))
-    axes = axes if isinstance(axes, list) else [axes]
+    # axes = axes if isinstance(axes, list) else [axes]
 
     plt.subplots_adjust(left=0.45, bottom=0.2, top=0.85, right=0.96)
 

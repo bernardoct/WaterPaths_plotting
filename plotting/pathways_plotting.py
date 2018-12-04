@@ -129,7 +129,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, #cmap,
         plt.show()
     else:
         plt.savefig(savefig_directory +
-                    'Pathways_s{}_RDM{}_{}_{}_colormap.svg'.format(
+                    'Pathways_s{}_RDM{}_{}_{}_colormap.png'.format(
                         s, rdm, suffix, utility_name))
 
 
