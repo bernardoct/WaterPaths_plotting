@@ -75,7 +75,7 @@ def create_cmap(pathways, ninfra):
     return cmap, normalize, bounds
 
 
-def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, #cmap,
+def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  colors_infra_pathways,
                            savefig_directory='', nrealizations=1000,
                            sort_by=(), ninfra=0, sources=(),
                            construction_order=(),
@@ -93,8 +93,8 @@ def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, #cmap,
 
     ax.imshow(pathways + 1.1, origin='lower', cmap=cmap, norm=normalize,
               aspect='auto')
-    ax.set_xlabel('Year', **{'fontname':'CMU Bright', 'size' : tick_font_size})
-    ax.set_ylabel('Realization', **{'fontname':'CMU Bright', 'size' : tick_font_size})
+    ax.set_xlabel('Year', **{'fontname': 'CMU Bright', 'size' : tick_font_size})
+    ax.set_ylabel('Realization', **{'fontname': 'CMU Bright', 'size' : tick_font_size})
 
     ax.grid(False)
     ax.set_yticks([0, nrealizations])
@@ -104,7 +104,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, #cmap,
     xticks_at = np.arange(0, nweeks, 52.1 * 5)
     ax.set_xticks(xticks_at)
     ax.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
-                       {'fontname':'CMU Bright', 'size' : tick_font_size})
+                       {'fontname':'CMU Bright', 'size': tick_font_size})
 
     if len(construction_order) > 0:
         sources = np.hstack((['Status-quo'], sources))
@@ -130,7 +130,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, s, rdm, #cmap,
     else:
         plt.savefig(savefig_directory +
                     'Pathways_s{}_RDM{}_{}_{}_colormap.png'.format(
-                        s, rdm, suffix, utility_name))
+                        solution, rdm, suffix, utility_name))
 
 
 def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,

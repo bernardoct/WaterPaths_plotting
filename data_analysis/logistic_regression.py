@@ -173,9 +173,9 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
             files_root_directory, sol_number, name_suffix))
         # plt.clf()
         # plt.close()
-    else:
-        plt.show()
-        # plt.clf()
-        # plt.close()
+    # else:
+    #     plt.show()
+    #     # plt.clf()
+    #     # plt.close()
 
     return ax

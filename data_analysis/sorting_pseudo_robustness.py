@@ -102,10 +102,11 @@ def get_influential_rdm_factors_logistic_regression(objectives_by_solution, non_
 
 
 def get_influential_rdm_factors_boosted_trees(objectives_by_solution, non_crashed_by_solution,
-                                              performance_criteria, files_root_directory,
+                                              performance_criteria,
                                               apply_criteria_on_objs, rdm_factors,
                                               not_group_objectives=False, solutions=(),
-                                              n_trees=100, tree_depth=2, plot=False, name_suffix=''):
+                                              n_trees=100, tree_depth=2, plot=False, name_suffix='',
+                                              files_root_directory=''):
 
     nsols = len(objectives_by_solution)
     if len(solutions) == 0:

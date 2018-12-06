@@ -1,8 +1,4 @@
 from matplotlib.colors import LinearSegmentedColormap
-
-from data_analysis.clustering import gmm_cluster
-from data_analysis.complimentary_solutions import calc_pass_fail, \
-    find_complimentary_solution
 from data_analysis.sorting_pseudo_robustness import \
     calculate_pseudo_robustness, get_robust_compromise_solutions, \
     get_influential_rdm_factors_boosted_trees, \
@@ -16,11 +12,6 @@ from plotting.pathways_plotting import *
 from plotting.parallel_axis import *
 import os.path
 from copy import deepcopy
-
-from plotting.dec_vars_radar import plot_decvars_radar
-from plotting.robustness_bar_chart import pseudo_robustness_plot, \
-    important_factors_multiple_solutions_plot
-from sklearn import mixture
 
 bu_cy = LinearSegmentedColormap.from_list('BuCy', [(0, 0, 1), (0, 1, 1)])
 bu_cy_r = bu_cy.reversed()
@@ -91,7 +82,7 @@ def plot_all_paxis(objective_on_du_grouped, objective_on_wcu_grouped,
         cbar_same_scale=True,
         highlight_solutions=highlight_solutions,
         brush_criteria=brush_criteria1
-        )
+    )
 
     parallel_axis([robustnesses_ordered_by_sol_id[:n_wcu],
                    robustnesses_ordered_by_sol_id[n_wcu:]], range(4), 1,
@@ -148,45 +139,19 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution,
     return robustnesses
 
 
-def plot_pathways_utility(most_influential_factors_all, lr_coef_all,
-                          non_repeated_dec_var_ix, s, utility_to_plot, name,
-                          rdm):
-
+def plot_pathways_utility(pathways, solution, utility_to_plot, name,
+                          rdm, colors_infra_pathways, suffix=''):
     # # Only low and high WJLWTP had permitting times.
     # important_factors_multiple_solutions_plot(most_influential_factors_all,
     #                                           lr_coef_all, 2,
     #                                           create_labels_list(),
     #                                           files_root_directory)
 
-    pathways_all = load_pathways_solution(files_root_directory +
-                                          '../re-evaluation_against_du/pathways/',
-                                          non_repeated_dec_var_ix[s], [rdm])
-
     ninfra = np.array([0, 6, 0, 4])[utility_to_plot]
 
-    reservoir_utility_connectivity_matrix = \
-        [[3, 4, 5, 6, 12, 13, 14, 20, 21, 24],  # OWASA
-         [0, 6, 9, 15, 16, 18, 19, 20, 21],  # Durham
-         [6, 22, 23],  # Cary
-         [1, 2, 6, 7, 8, 17, 10, 20, 21]]  # Raleigh
-
-    # pathways_all_mono = load_pathways_solution(files_root_directory,
-    #                                            s, [rdm_max])
-    #
-    # # # SORT REALIATIONS BY INFLOWS, EVAPORATIONS AND DEMANDS. NOT FRUITFUL
-    # # # PROBABLY BECAUSE OF THE COMPLEX SYSTEM DYNAMICS
-    #
-    # # lt_rof_mono = np.loadtxt(files_root_directory +
-    # #                          'data/Utilities_s{}_RDM{}_r{}.csv'
-    # #                          .format(s, rdm_max, realization_to_plot),
-    # #                          delimiter=',',
-    # #                          skiprows=1)[:, 4 + utility_to_plot * 15]
-    # # skiprows=1)[:, [4 + utility_to_plot * 15, 13 + utility_to_plot * 15]]
-    # # lt_rof_mono[:, 1] /= np.max(lt_rof_mono[:, 1]*4)
-    #
     # Plot pathways
     pathways_list_utility_high = \
-        get_pathways_by_utility_realization(pathways_all[0])
+        get_pathways_by_utility_realization(pathways[0])
     utility_pathways_high = pathways_list_utility_high[utility_to_plot]
 
     # replace infrastructure id by construction order
@@ -197,13 +162,13 @@ def plot_pathways_utility(most_influential_factors_all, lr_coef_all,
             construction_order)
 
     plot_colormap_pathways(utility_pathways_high_copy, 2400,
-                           non_repeated_dec_var_ix[s], rdm,
+                           solution, rdm, colors_infra_pathways,
                            savefig_directory=files_root_directory,
                            # + 'Figures/',
                            nrealizations=1000,
                            ninfra=ninfra, sources=sources,
                            construction_order=construction_order,
-                           utility_name=name, year0=2015, suffix=str(rdm))
+                           utility_name=name, year0=2015, suffix=suffix)
 
 
 def plot_decision_vars():
@@ -255,11 +220,70 @@ def plot_decision_vars():
     #                                           files_root_directory)
 
 
+def get_best_worse_rdm(objectives_original, performance_criteria, apply_criteria_on_objs, invert):
+    objectives = np.multiply(objectives_original[:, apply_criteria_on_objs], invert)
+    objs_min, objs_ptp = objectives.min(axis=0), objectives.ptp(axis=0)
+
+    performance_criteria_norm = (np.array(performance_criteria) - objs_min) / (objs_ptp + 1e-6)
+    objectives_norm_minus_criteria = (objectives - objs_min) / (objs_ptp + 1e-6) - performance_criteria_norm
+
+    objectives_norm_fail_by = np.multiply(objectives_norm_minus_criteria, objectives_norm_minus_criteria > 0)
+    distance_from_criteria_fail = np.sqrt(np.multiply(objectives_norm_fail_by, objectives_norm_fail_by).sum(axis=1))
+
+    objectives_norm_pass_by = np.multiply(objectives_norm_minus_criteria, objectives_norm_minus_criteria < 0)
+    distance_from_criteria_pass = np.sqrt(np.multiply(objectives_norm_pass_by, objectives_norm_pass_by).sum(axis=1))
+
+    best_rdm, worse_rdm = np.argmax(distance_from_criteria_pass), np.argmax(distance_from_criteria_fail)
+
+    return best_rdm, worse_rdm
+
+
+def plot_scenario_discovery_pathways(utilities, objectives_by_solution, non_crashed_by_solution, performance_criteria,
+                                     invert, files_root_directory, rdm_factors, colors_infra_pathways):
+
+    ntrees = 100
+    tree_depth = 4
+    for s in [most_robust_for_each[1], most_robust_for_each[3]]:
+        for u in range(1, len(utilities)):
+            best_rdm, worse_rdm = get_best_worse_rdm(objectives_by_solution[s], performance_criteria,
+                                                     np.array(apply_criteria_on_objs) + 6 * u, invert)
+
+            most_influential_factors_all_u, pass_fail_all_u, non_crashed_rdm_all_u, lr_coef_all_u, ax = \
+                get_influential_rdm_factors_boosted_trees(
+                    objectives_by_solution,
+                    non_crashed_by_solution,
+                    performance_criteria,
+                    np.array(apply_criteria_on_objs) + u * 6, rdm_factors,
+                    not_group_objectives=True,
+                    solutions=[s],
+                    plot=True,
+                    n_trees=ntrees,
+                    tree_depth=tree_depth,
+                    name_suffix=utilities[u])
+            # files_root_directory=files_root_directory)
+
+            x_best_rdm, y_best_rdm = rdm_factors[best_rdm, [most_influential_factors_all_u[0][-2],
+                                                            most_influential_factors_all_u[0][-1]]]
+            x_worse_rdm, y_worse_rdm = rdm_factors[worse_rdm, [most_influential_factors_all_u[0][-2],
+                                                               most_influential_factors_all_u[0][-1]]]
+            if ax is not None:
+                ax.scatter([x_best_rdm, x_worse_rdm], [y_best_rdm, y_worse_rdm], c=cm.get_cmap('tab10').colors[2], s=50)
+
+            best_rdm_original_numbering = np.arange(len(non_crashed_by_solution[s]))[non_crashed_by_solution[s]][best_rdm]
+            worse_rdm_original_numbering = np.arange(len(non_crashed_by_solution[s]))[non_crashed_by_solution[s]][worse_rdm]
+            pathways = load_pathways_solution(files_root_directory +
+                                              '../re-evaluation_against_du/pathways/',
+                                              non_repeated_dec_var_ix[s], [best_rdm_original_numbering, worse_rdm_original_numbering])
+
+            plot_pathways_utility([pathways[0]], s, u, utilities[u], best_rdm, colors_infra_pathways, suffix='best_rdm')
+
+            plot_pathways_utility([pathways[1]], s, u, utilities[u], worse_rdm, colors_infra_pathways, suffix='worse_rdm')
+
+
+
 if __name__ == '__main__':
-    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/' \
-                           'rdm_results/'
-    # files_root_directory = '/media/DATA//Dropbox/Bernardo/Research/WaterPaths_results/' \
-    #                        'rdm_results/'
+    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
+    files_root_directory = '/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -291,6 +315,29 @@ if __name__ == '__main__':
                         'Cary WTP\nupgrade 2',
                         'Cane Creek\nReservoir Expansion',
                         'Status-quo'])
+
+    sources_not_built = np.array(['Little River\nReservoir (Raleigh)',
+                        'Richland\nCreek Quarry',
+                        'Teer Quarry',
+                        'Neuse River\nIntake',
+                        'Low StoneQuarry\nExpansion',
+                        'High Stone\nQuarry Expansion',
+                        'University Lake\nExpansion',
+                        'Low Lake Michie\nExpansion',
+                        'High Lake \nMichie Expansion',
+                        'Falls Lake \nReallocation',
+                        'Low Reclaimed\nWater System',
+                        'High Reclaimed\nWater System',
+                        'Low Capacity\nWJLWTP',
+                        'High Capacity\nWJLWTP',
+                        'Cary WTP\nupgrade 1',
+                        'Cary WTP\nupgrade 2',
+                        'Cane Creek\nReservoir Expansion',
+                        'Status-quo'])
+
+    colors_infra_pathways = {}
+    for source, color in zip(sources_not_built, cm.get_cmap('tab20').colors):
+        colors_infra_pathways[source] = color
 
     # Load decision variables
     dec_vars_raw = np.loadtxt(files_root_directory
@@ -386,7 +433,7 @@ if __name__ == '__main__':
     print 'not brushed performance ', good_sols
 
     performance_criteria = (0.990, 0.2, 0.1)
-    apply_criteria_on_objs = (0, 1, 4)
+    apply_criteria_on_objs = [0, 1, 4]
     utilities = ['OWASA', 'Durham', 'Cary', 'Raleigh']
     robustnesses = calculate_pseudo_robustnesses(performance_criteria,
                                                  objectives_by_solution,
@@ -455,24 +502,6 @@ if __name__ == '__main__':
                                                      robust_for_all[
                                                          0]] - 0.001)))
 
-    ntrees = 100
-    tree_depth = 4
-    for s in [most_robust_for_each[1], most_robust_for_each[3]]:
-        for i in range(len(utilities)):
-            most_influential_factors_all_u, pass_fail_all_u, non_crashed_rdm_all_u, \
-            lr_coef_all_u, ax = get_influential_rdm_factors_boosted_trees(
-                objectives_by_solution,
-                non_crashed_by_solution,
-                performance_criteria,
-                files_root_directory,
-                np.array(apply_criteria_on_objs) + i * 6, rdm_factors,
-                not_group_objectives=True,
-                solutions=[s],
-                plot=True,
-                n_trees=ntrees,
-                tree_depth=tree_depth,
-                name_suffix=utilities[i])
-
-            rdm = np.argmax(rdm_factors[:, most_influential_factors_all_u[0][0]])
-            plot_pathways_utility(most_influential_factors_all_u, lr_coef_all_u,
-                                  non_repeated_dec_var_ix, 270, 1, 'Durham', rdm)
+    plot_scenario_discovery_pathways(utilities, objectives_by_solution,
+                                     non_crashed_by_solution, performance_criteria, [-1, 1, 1], files_root_directory,
+                                     rdm_factors, colors_infra_pathways)
