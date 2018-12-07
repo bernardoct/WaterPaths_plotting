@@ -4,7 +4,6 @@ import numpy as np
 
 
 def reorder_pathways(pathways_utility):
-
     # score = []
     # for p in pathways_utility:
     #     # score.append(np.abs(np.sum(2400 - p[1])))
@@ -24,7 +23,7 @@ def reorder_pathways(pathways_utility):
     #                              -np.sum(x[1])])
 
     sorted_pathways = sorted(pathways_utility,
-                  key=lambda x: list(x[2]) + [1e5] * (10 - len(x[2])))
+                             key=lambda x: list(x[2]) + [1e5] * (10 - len(x[2])))
     sorted_pathways_no_empty = []
     count = 0
     for sp in sorted_pathways:
@@ -51,8 +50,7 @@ def convert_pathways_from_source_id_to_construction_id(pathways_all_rdms,
 
 def create_fixed_length_pathways_array(weeks_vector,
                                        infra_option_or_npv, length, n_sources):
-
-    fixed_length_array = np.ones(length) * n_sources
+    fixed_length_array = np.ones(length) * (n_sources - 1)
 
     for i in range(1, len(weeks_vector)):
         fixed_length_array[weeks_vector[i - 1]: weeks_vector[i]] = \
@@ -70,17 +68,16 @@ def get_mesh_pathways(pathways_utility, nweeks, n_existing_sources, n_sources,
 
     x, y = np.meshgrid(range(nrealizations), range(nweeks))
 
-    z = np.zeros((nrealizations, nweeks))
+    z = np.ones((nrealizations, nweeks)) * (n_sources - 1) - n_existing_sources
     for p in pathways_utility:
         r = p[0][0]
-        z[r] = create_fixed_length_pathways_array(p[1], p[2], nweeks, n_sources) \
-               - n_existing_sources
+        z[r] = create_fixed_length_pathways_array(p[1], p[2], nweeks, n_sources) - \
+               n_existing_sources
 
     return x, y, z
 
 
 def get_infra_order(pathways_utility_rdm):
-
     build_infra_all_reals = np.array([])
     for p in pathways_utility_rdm:
         build_infra_all_reals = np.hstack((build_infra_all_reals, p[2]))
@@ -90,7 +87,6 @@ def get_infra_order(pathways_utility_rdm):
 
 
 def get_pathways_by_utility_realization(pathways_sol):
-
     # Reformat utility data
     pathways_list_utility = []
     for u in range(int(max(pathways_sol[:, 1])) + 1):

@@ -260,8 +260,8 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution, non_cras
                     plot=True,
                     n_trees=ntrees,
                     tree_depth=tree_depth,
-                    name_suffix=utilities[u])
-            # files_root_directory=files_root_directory)
+                    name_suffix=utilities[u],
+                    files_root_directory=files_root_directory)
 
             x_best_rdm, y_best_rdm = rdm_factors[best_rdm, [most_influential_factors_all_u[0][-2],
                                                             most_influential_factors_all_u[0][-1]]]
@@ -270,21 +270,23 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution, non_cras
             if ax is not None:
                 ax.scatter([x_best_rdm, x_worse_rdm], [y_best_rdm, y_worse_rdm], c=cm.get_cmap('tab10').colors[2], s=50)
 
-            best_rdm_original_numbering = np.arange(len(non_crashed_by_solution[s]))[non_crashed_by_solution[s]][best_rdm]
-            worse_rdm_original_numbering = np.arange(len(non_crashed_by_solution[s]))[non_crashed_by_solution[s]][worse_rdm]
+            best_rdm_original_numbering = \
+                np.arange(len(non_crashed_by_solution[s]))[non_crashed_by_solution[s]][best_rdm]
+            worse_rdm_original_numbering = \
+                np.arange(len(non_crashed_by_solution[s]))[non_crashed_by_solution[s]][worse_rdm]
             pathways = load_pathways_solution(files_root_directory +
                                               '../re-evaluation_against_du/pathways/',
-                                              non_repeated_dec_var_ix[s], [best_rdm_original_numbering, worse_rdm_original_numbering])
+                                              non_repeated_dec_var_ix[s],
+                                              [best_rdm_original_numbering, worse_rdm_original_numbering])
 
             plot_pathways_utility([pathways[0]], s, u, utilities[u], best_rdm, n_existing_sources, suffix='best_rdm')
 
             plot_pathways_utility([pathways[1]], s, u, utilities[u], worse_rdm, n_existing_sources, suffix='worse_rdm')
 
 
-
 if __name__ == '__main__':
-    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
-    # files_root_directory = '/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
+    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
+    files_root_directory = '/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -297,25 +299,25 @@ if __name__ == '__main__':
                         'Cane Creek Reservoir',
                         'University Lake',
                         'Jordan Lake',
-                        'Little River Reservoir (Raleigh)',
-                        'Richland Creek Quarry',
-                        'Teer Quarry',
-                        'Neuse River Intake',
-                        'Dummy Node',
-                        'Low StoneQuarry Expansion',
-                        'High Stone Quarry Expansion',
-                        'University Lake Expansion',
-                        'Low Lake Michie Expansion',
-                        'High Lake  Michie Expansion',
-                        'Falls Lake  Reallocation',
-                        'Low Reclaimed Water System',
-                        'High Reclaimed Water System',
-                        'Low WJLWTP',
-                        'High WJLWTP',
-                        'Cary WTP upgrade 1',
-                        'Cary WTP upgrade 2',
-                        'Cane Creek Reservoir Expansion',
-                        'Status-quo'])
+                        'Little River Reservoir (Raleigh)',#7 0
+                        'Richland Creek Quarry',#8 1
+                        'Teer Quarry',#9 2
+                        'Neuse River Intake',#10 3
+                        'Dummy Node',#11 4
+                        'Low StoneQuarry Expansion',#12 5
+                        'High Stone Quarry Expansion',#13 6
+                        'University Lake Expansion',#14 7
+                        'Low Lake Michie Expansion',#15 8
+                        'High Lake  Michie Expansion',#16 9
+                        'Falls Lake  Reallocation',#17 10
+                        'Low Reclaimed Water System',#18 11
+                        'High Reclaimed Water System',#19 12
+                        'Low WJLWTP',#20 13
+                        'High WJLWTP',#21 14
+                        'Cary WTP upgrade 1',#22 15
+                        'Cary WTP upgrade 2',#23 16
+                        'Cane Creek Reservoir Expansion',#24 17
+                        'Status-quo']) #25 18
 
     # Load decision variables
     dec_vars_raw = np.loadtxt(files_root_directory
@@ -482,4 +484,4 @@ if __name__ == '__main__':
 
     plot_scenario_discovery_pathways(utilities, objectives_by_solution,
                                      non_crashed_by_solution, performance_criteria, [-1, 1, 1], files_root_directory,
-                                     rdm_factors, 8)
+                                     rdm_factors, 7)
