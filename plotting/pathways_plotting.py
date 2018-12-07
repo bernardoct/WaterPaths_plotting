@@ -10,7 +10,7 @@ import pandas as pd
 from copy import deepcopy
 from matplotlib.patches import Ellipse
 
-tick_font_size = 12
+tick_font_size = 10
 
 def plot_construction_moment(pathways_utility, s, rdm,
                              savefig_directory=''):
@@ -75,7 +75,7 @@ def create_cmap(pathways, ninfra):
     return cmap, normalize, bounds
 
 
-def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  colors_infra_pathways,
+def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  n_existing_sources,
                            savefig_directory='', nrealizations=1000,
                            sort_by=(), ninfra=0, sources=(),
                            construction_order=(),
@@ -83,28 +83,31 @@ def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  colors_infr
 
     fig, ax = plt.subplots(figsize=(8, 5))
     x, y, pathways = get_mesh_pathways(pathways_utility, nweeks,
-                                nrealizations=nrealizations)
+                                       n_existing_sources, len(sources),
+                                       nrealizations=nrealizations)
     if len(sort_by) == 0:
         pathways = np.array(sorted(pathways, key=lambda x : sum(x)))
     else:
         pathways = np.array(pathways)[sort_by]
 
-    cmap, normalize, bounds = create_cmap(pathways, ninfra+1)
+    # cmap, normalize, bounds = create_cmap(pathways, ninfra+1)
 
-    ax.imshow(pathways + 1.1, origin='lower', cmap=cmap, norm=normalize,
+    body_font = 'Open Sans Condensed'
+
+    ax.imshow(pathways, origin='lower', cmap=cm.get_cmap('tab20'),# norm=normalize,
               aspect='auto')
-    ax.set_xlabel('Year', **{'fontname': 'CMU Bright', 'size' : tick_font_size})
-    ax.set_ylabel('Realization', **{'fontname': 'CMU Bright', 'size' : tick_font_size})
+    ax.set_xlabel('Year', **{'fontname': body_font, 'size' : tick_font_size})
+    ax.set_ylabel('Realization', **{'fontname': body_font, 'size' : tick_font_size})
 
     ax.grid(False)
     ax.set_yticks([0, nrealizations])
     ax.set_yticklabels(['Little and late\nnew infrastructure', 'Significant '
                        'and early\nnew infrastructure'],
-                       {'fontname':'CMU Bright', 'size' : tick_font_size})
+                       {'fontname': body_font, 'size' : tick_font_size})
     xticks_at = np.arange(0, nweeks, 52.1 * 5)
     ax.set_xticks(xticks_at)
     ax.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
-                       {'fontname':'CMU Bright', 'size': tick_font_size})
+                       {'fontname': body_font, 'size': tick_font_size})
 
     if len(construction_order) > 0:
         sources = np.hstack((['Status-quo'], sources))
@@ -113,16 +116,22 @@ def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  colors_infr
         pos = ax.get_position()
         new_pos = [pos.x0, 0.1, 0.7 - pos.x0, 0.9]
         ax.set_position(new_pos)
-        cb = ColorbarBase(ax2, cmap=cmap, norm=normalize,
-                                       spacing='proportional', ticks=bounds,
-                                       boundaries=bounds, format='%1i')
+        n_prospective_sources = len(sources[n_existing_sources:]) + 1
+        bounds = 1. / n_prospective_sources * np.arange(n_prospective_sources)
+        cb = ColorbarBase(ax2,
+                          cmap=cm.get_cmap('tab20'),
+                          #norm=normalize,
+                          spacing='proportional',
+                          ticks=bounds,
+                          boundaries=bounds,
+                          format='%1i')
 
-        # cb.ax.set_title('Infrastructure\nOptions', **{'fontname':'CMU Bright',
-        #                                            'size' : tick_font_size})
+        cb.ax.set_title('Infrastructure\nOptions', **{'fontname': 'Open Sans',
+                                                   'size' : tick_font_size})
         # ax2.set_ylabel('Very custom cbar [-]', size=12)
-        cb.set_ticks(bounds[:-1] + 0.5)
-        cb.set_ticklabels(sources[construction_order.astype(int)],
-                          {'fontname':'CMU Bright', 'size' : tick_font_size})
+        cb.set_ticks(bounds + 1. / (2. * n_prospective_sources))
+        cb.set_ticklabels(sources[n_existing_sources:],
+                          {'fontname': body_font, 'size': tick_font_size})
         cb.ax.tick_params(labelsize=tick_font_size)
 
     if savefig_directory == '':

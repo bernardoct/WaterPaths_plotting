@@ -140,7 +140,7 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution,
 
 
 def plot_pathways_utility(pathways, solution, utility_to_plot, name,
-                          rdm, colors_infra_pathways, suffix=''):
+                          rdm, n_existing_sources, suffix=''):
     # # Only low and high WJLWTP had permitting times.
     # important_factors_multiple_solutions_plot(most_influential_factors_all,
     #                                           lr_coef_all, 2,
@@ -156,13 +156,14 @@ def plot_pathways_utility(pathways, solution, utility_to_plot, name,
 
     # replace infrastructure id by construction order
     construction_order = get_infra_order(utility_pathways_high)
-    utility_pathways_high_copy = \
-        convert_pathways_from_source_id_to_construction_id(
-            utility_pathways_high,
-            construction_order)
+    # utility_pathways_high_copy = \
+    #     convert_pathways_from_source_id_to_construction_id(
+    #         utility_pathways_high,
+    #         construction_order)
+    utility_pathways_high_copy = utility_pathways_high
 
     plot_colormap_pathways(utility_pathways_high_copy, 2400,
-                           solution, rdm, colors_infra_pathways,
+                           solution, rdm, n_existing_sources,
                            savefig_directory=files_root_directory,
                            # + 'Figures/',
                            nrealizations=1000,
@@ -239,7 +240,7 @@ def get_best_worse_rdm(objectives_original, performance_criteria, apply_criteria
 
 
 def plot_scenario_discovery_pathways(utilities, objectives_by_solution, non_crashed_by_solution, performance_criteria,
-                                     invert, files_root_directory, rdm_factors, colors_infra_pathways):
+                                     invert, files_root_directory, rdm_factors, n_existing_sources):
 
     ntrees = 100
     tree_depth = 4
@@ -275,15 +276,15 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution, non_cras
                                               '../re-evaluation_against_du/pathways/',
                                               non_repeated_dec_var_ix[s], [best_rdm_original_numbering, worse_rdm_original_numbering])
 
-            plot_pathways_utility([pathways[0]], s, u, utilities[u], best_rdm, colors_infra_pathways, suffix='best_rdm')
+            plot_pathways_utility([pathways[0]], s, u, utilities[u], best_rdm, n_existing_sources, suffix='best_rdm')
 
-            plot_pathways_utility([pathways[1]], s, u, utilities[u], worse_rdm, colors_infra_pathways, suffix='worse_rdm')
+            plot_pathways_utility([pathways[1]], s, u, utilities[u], worse_rdm, n_existing_sources, suffix='worse_rdm')
 
 
 
 if __name__ == '__main__':
-    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
-    files_root_directory = '/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
+    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
+    # files_root_directory = '/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -291,53 +292,30 @@ if __name__ == '__main__':
     n_utilities = 4
     sources = np.array(['Lake Michie & Little River Res. (Durham)',
                         'Falls Lake',
-                        'Wheeler-Benson\nLakes',
+                        'Wheeler-Benson Lakes',
                         'Stone Quarry',
-                        'Cane Creek\nReservoir',
+                        'Cane Creek Reservoir',
                         'University Lake',
                         'Jordan Lake',
-                        'Little River\nReservoir (Raleigh)',
-                        'Richland\nCreek Quarry',
+                        'Little River Reservoir (Raleigh)',
+                        'Richland Creek Quarry',
                         'Teer Quarry',
-                        'Neuse River\nIntake',
+                        'Neuse River Intake',
                         'Dummy Node',
-                        'Low StoneQuarry\nExpansion',
-                        'High Stone\nQuarry Expansion',
-                        'University Lake\nExpansion',
-                        'Low Lake Michie\nExpansion',
-                        'High Lake \nMichie Expansion',
-                        'Falls Lake \nReallocation',
-                        'Low Reclaimed\nWater System',
-                        'High Reclaimed\nWater System',
+                        'Low StoneQuarry Expansion',
+                        'High Stone Quarry Expansion',
+                        'University Lake Expansion',
+                        'Low Lake Michie Expansion',
+                        'High Lake  Michie Expansion',
+                        'Falls Lake  Reallocation',
+                        'Low Reclaimed Water System',
+                        'High Reclaimed Water System',
                         'Low WJLWTP',
                         'High WJLWTP',
-                        'Cary WTP\nupgrade 1',
-                        'Cary WTP\nupgrade 2',
-                        'Cane Creek\nReservoir Expansion',
+                        'Cary WTP upgrade 1',
+                        'Cary WTP upgrade 2',
+                        'Cane Creek Reservoir Expansion',
                         'Status-quo'])
-
-    sources_not_built = np.array(['Little River\nReservoir (Raleigh)',
-                        'Richland\nCreek Quarry',
-                        'Teer Quarry',
-                        'Neuse River\nIntake',
-                        'Low StoneQuarry\nExpansion',
-                        'High Stone\nQuarry Expansion',
-                        'University Lake\nExpansion',
-                        'Low Lake Michie\nExpansion',
-                        'High Lake \nMichie Expansion',
-                        'Falls Lake \nReallocation',
-                        'Low Reclaimed\nWater System',
-                        'High Reclaimed\nWater System',
-                        'Low Capacity\nWJLWTP',
-                        'High Capacity\nWJLWTP',
-                        'Cary WTP\nupgrade 1',
-                        'Cary WTP\nupgrade 2',
-                        'Cane Creek\nReservoir Expansion',
-                        'Status-quo'])
-
-    colors_infra_pathways = {}
-    for source, color in zip(sources_not_built, cm.get_cmap('tab20').colors):
-        colors_infra_pathways[source] = color
 
     # Load decision variables
     dec_vars_raw = np.loadtxt(files_root_directory
@@ -504,4 +482,4 @@ if __name__ == '__main__':
 
     plot_scenario_discovery_pathways(utilities, objectives_by_solution,
                                      non_crashed_by_solution, performance_criteria, [-1, 1, 1], files_root_directory,
-                                     rdm_factors, colors_infra_pathways)
+                                     rdm_factors, 8)

@@ -50,29 +50,31 @@ def convert_pathways_from_source_id_to_construction_id(pathways_all_rdms,
 
 
 def create_fixed_length_pathways_array(weeks_vector,
-                                       infra_option_or_npv, length):
+                                       infra_option_or_npv, length, n_sources):
 
-    fixed_length_array = np.ones(length) * -1
+    fixed_length_array = np.ones(length) * n_sources
 
     for i in range(1, len(weeks_vector)):
-        fixed_length_array[weeks_vector[i - 1] : weeks_vector[i]] = \
+        fixed_length_array[weeks_vector[i - 1]: weeks_vector[i]] = \
             infra_option_or_npv[i - 1]
 
-    fixed_length_array[weeks_vector[-1] : -1] = infra_option_or_npv[-1]
+    fixed_length_array[weeks_vector[-1]: -1] = infra_option_or_npv[-1]
 
     return fixed_length_array
 
 
-def get_mesh_pathways(pathways_utility, nweeks, nrealizations=-1):
+def get_mesh_pathways(pathways_utility, nweeks, n_existing_sources, n_sources,
+                      nrealizations=-1):
     if nrealizations == -1:
         nrealizations = len(pathways_utility)
 
     x, y = np.meshgrid(range(nrealizations), range(nweeks))
 
-    z = np.ones((nrealizations, nweeks)) * -1
+    z = np.zeros((nrealizations, nweeks))
     for p in pathways_utility:
         r = p[0][0]
-        z[r] = create_fixed_length_pathways_array(p[1], p[2], nweeks)
+        z[r] = create_fixed_length_pathways_array(p[1], p[2], nweeks, n_sources) \
+               - n_existing_sources
 
     return x, y, z
 
