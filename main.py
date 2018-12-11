@@ -420,25 +420,25 @@ def create_plots():
                         'Cane Creek Reservoir',
                         'University Lake',
                         'Jordan Lake',
-                        'Little River Reservoir (Raleigh)',
-                        'Richland Creek Quarry',
-                        'Teer Quarry',
-                        'Neuse River Intake',
-                        'Dummy Node',
-                        'Low StoneQuarry Expansion',
-                        'High Stone Quarry Expansion',
-                        'University Lake Expansion',
-                        'Low Lake Michie Expansion',
-                        'High Lake  Michie Expansion',
-                        'Falls Lake  Reallocation',
-                        'Low Reclaimed Water System',
-                        'High Reclaimed Water System',
-                        'Low WJLWTP',
-                        'High WJLWTP',
-                        'Cary WTP upgrade 1',
-                        'Cary WTP upgrade 2',
-                        'Cane Creek Reservoir Expansion',
-                        'Status-quo'])
+                        'Little River Reservoir (Raleigh)',#7 0
+                        'Richland Creek Quarry',#8 1
+                        'Teer Quarry',#9 2
+                        'Neuse River Intake',#10 3
+                        'Dummy Node',#11 4
+                        'Low StoneQuarry Expansion',#12 5
+                        'High Stone Quarry Expansion',#13 6
+                        'University Lake Expansion',#14 7
+                        'Low Lake Michie Expansion',#15 8
+                        'High Lake  Michie Expansion',#16 9
+                        'Falls Lake  Reallocation',#17 10
+                        'Low Reclaimed Water System',#18 11
+                        'High Reclaimed Water System',#19 12
+                        'Low WJLWTP',#20 13
+                        'High WJLWTP',#21 14
+                        'Cary WTP upgrade 1',#22 15
+                        'Cary WTP upgrade 2',#23 16
+                        'Cane Creek Reservoir Expansion',#24 17
+                        'Status-quo']) #25 18
 
     # Load decision variables
     dec_vars_raw = np.loadtxt(files_root_directory

@@ -86,7 +86,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  n_existing_
                                        n_existing_sources, len(sources),
                                        nrealizations=nrealizations)
     if len(sort_by) == 0:
-        pathways = np.array(sorted(pathways, key=lambda x : sum(x)))
+        pathways = np.array(sorted(pathways, key=lambda x: sum(x)))
     else:
         pathways = np.array(pathways)[sort_by]
 
@@ -95,7 +95,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  n_existing_
     body_font = 'Open Sans Condensed'
 
     ax.imshow(pathways, origin='lower', cmap=cm.get_cmap('tab20'),# norm=normalize,
-              aspect='auto')
+              aspect='auto', vmin=0)
     ax.set_xlabel('Year', **{'fontname': body_font, 'size' : tick_font_size})
     ax.set_ylabel('Realization', **{'fontname': body_font, 'size' : tick_font_size})
 
@@ -103,24 +103,22 @@ def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  n_existing_
     ax.set_yticks([0, nrealizations])
     ax.set_yticklabels(['Little and late\nnew infrastructure', 'Significant '
                        'and early\nnew infrastructure'],
-                       {'fontname': body_font, 'size' : tick_font_size})
+                       {'fontname': body_font, 'size': tick_font_size})
     xticks_at = np.arange(0, nweeks, 52.1 * 5)
     ax.set_xticks(xticks_at)
     ax.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
                        {'fontname': body_font, 'size': tick_font_size})
 
     if len(construction_order) > 0:
-        sources = np.hstack((['Status-quo'], sources))
-        construction_order = np.hstack(([0], construction_order + 1))
+        # sources = np.hstack((['Status-quo'], sources))
         ax2 = fig.add_axes([0.75, 0.1, 0.03, 0.8])
         pos = ax.get_position()
         new_pos = [pos.x0, 0.1, 0.7 - pos.x0, 0.9]
         ax.set_position(new_pos)
-        n_prospective_sources = len(sources[n_existing_sources:]) + 1
+        n_prospective_sources = len(sources[n_existing_sources - 1:])
         bounds = 1. / n_prospective_sources * np.arange(n_prospective_sources)
         cb = ColorbarBase(ax2,
                           cmap=cm.get_cmap('tab20'),
-                          #norm=normalize,
                           spacing='proportional',
                           ticks=bounds,
                           boundaries=bounds,
