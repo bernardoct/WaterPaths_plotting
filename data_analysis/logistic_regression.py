@@ -1,6 +1,8 @@
+from copy import deepcopy
+
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import cm
+from matplotlib import cm, colors
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
@@ -9,6 +11,17 @@ from data_transformation.process_rdm_objectives import create_labels_list
 from sklearn.linear_model import LogisticRegression
 
 CRASHED_OBJ_VALUE = 10000
+
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+    color_scale = np.concatenate(
+        (np.linspace(minval, 0.5, n / 2), np.linspace(0.5, maxval, n / 2)),
+        axis=None
+    )
+    new_cmap = colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=0., b=1.),
+        cmap(color_scale)
+    )
+    return new_cmap
 
 
 def prepare_data_for_classification(objectives_by_solution, rdm_factors,
@@ -47,9 +60,9 @@ def logistic_regression_classification(objectives_by_solution, rdm_factors,
         most_influential_factors = np.argsort(np.abs(lr.coef_))[0]
 
         if plot:
-            logistic_regression_plot(most_influential_factors, pass_fail,
-                                     non_crashed_rdm, sol_number, lr,
-                                     files_root_directory=files_root_directory)
+            factor_mapping_plot(most_influential_factors, pass_fail,
+                                non_crashed_rdm, sol_number, lr,
+                                files_root_directory=files_root_directory)
         return most_influential_factors, pass_fail, non_crashed_rdm, lr.coef_[0]
     else:
         return -np.ones(nrdms, dtype=int), pass_fail, \
@@ -60,52 +73,64 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors,
                                  sol_number,
                                  performance_criteria, plot=False,
                                  n_trees=100, tree_depth=3,
-                                 files_root_directory='', name_suffix=''):
+                                 files_root_directory='', name_suffix='',
+                                 cmap=cm.get_cmap('coolwarm'),
+                                 dist_between_pass_fail_colors=0.7,
+                                 region_alpha=0.2, shift_colors=0):
     non_crashed_rdm, pass_fail, nrdms = \
         prepare_data_for_classification(objectives_by_solution, rdm_factors,
                                         performance_criteria)
 
     if len(np.unique(pass_fail)) == 2:
         # Perform logistic regression on rdm factors and pass/fail labels
-        # gbc = GradientBoostingClassifier(n_estimators=n_trees,
-        #                                  learning_rate=0.1,
-        #                                  max_depth=tree_depth)
-        gbc = RandomForestClassifier(n_estimators=n_trees, n_jobs=2)
+        gbc = GradientBoostingClassifier(n_estimators=n_trees,
+                                         learning_rate=0.1,
+                                         max_depth=tree_depth)
+        # gbc = RandomForestClassifier(n_estimators=n_trees, n_jobs=2)
         gbc.fit(non_crashed_rdm, pass_fail)
 
         # get most influential pair of factors
-        most_influential_factors = np.argsort(gbc.feature_importances_)
+        most_influential_factors = np.argsort(gbc.feature_importances_)[::-1]
+        feature_importances = deepcopy(gbc.feature_importances_)
 
         if plot:
-            ax = logistic_regression_plot(most_influential_factors, pass_fail,
-                                          non_crashed_rdm, sol_number, gbc,
-                                          files_root_directory=files_root_directory,
-                                          name_suffix=name_suffix)
+            ax, cmap_mod = factor_mapping_plot(most_influential_factors, pass_fail,
+                                     non_crashed_rdm, sol_number, gbc,
+                                     files_root_directory=files_root_directory,
+                                     name_suffix=name_suffix, cmap=cmap,
+                                     dist_between_pass_fail_colors=dist_between_pass_fail_colors,
+                                     region_alpha=region_alpha,
+                                     shift_colors=shift_colors)
         return most_influential_factors, pass_fail, non_crashed_rdm, \
-               gbc.feature_importances_, ax
+               feature_importances, ax, cmap_mod
     else:
         return -np.ones(nrdms, dtype=int), pass_fail, \
                [False] * nrdms, np.zeros(nrdms), None
 
 
-def logistic_regression_plot(most_influential_factors, pass_fail,
-                             non_crashed_rdm, sol_number, classifier,
-                             cmap=cm.get_cmap('coolwarm'), from_middle=0.35,
-                             files_root_directory='', name_suffix='',
-                             return_axis=False):
-    most_influential_pair = most_influential_factors[-2:]
+def factor_mapping_plot(most_influential_factors, pass_fail,
+                        non_crashed_rdm, sol_number, classifier,
+                        files_root_directory='', name_suffix='',
+                        cmap=cm.get_cmap('coolwarm'),
+                        dist_between_pass_fail_colors=0.7,
+                        region_alpha=0.2, shift_colors=0):
+    most_influential_pair = most_influential_factors[:2]
 
-    # plot logistic regression
     labels = create_labels_list()
-    # print 'Most influencial RDM factors: \n\t{}\n\t{}'.format(
-    #     labels[most_influential_pair[0]], labels[most_influential_pair[1]]
-    # )
 
     fig, ax = plt.subplots(figsize=(5, 4))
-    ax.set_xlabel(labels[most_influential_pair[0]],
-                  {'fontname': 'Open Sans Condensed', 'size': 12})
-    ax.set_ylabel(labels[most_influential_pair[1]],
-                  {'fontname': 'Open Sans Condensed', 'size': 12})
+    feature_importances = deepcopy(classifier.feature_importances_)
+
+    ax.set_xlabel('{} ({:.2f}%)'.format(
+        labels[most_influential_pair[0]],
+        feature_importances[most_influential_pair[0]] * 100),
+        {'fontname': 'Open Sans Condensed', 'size': 12}
+    )
+    ax.set_ylabel('{} ({:.2f}%)'.format(
+        labels[most_influential_pair[1]],
+        feature_importances[most_influential_pair[1]] * 100),
+        {'fontname': 'Open Sans Condensed', 'size': 12}
+    )
     ax.set_title('RDM for Solution {} {}'.format(sol_number, name_suffix),
                  {'fontname': 'Gill Sans MT', 'size': 16})
 
@@ -128,24 +153,27 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     dummy_points[:, most_influential_pair[1]] = yy.ravel()
 
     z = classifier.predict_proba(dummy_points)[:, 1]
-    z = z.reshape(xx.shape)
-    # cs = ax.contourf(xx, yy, 1. - z, 3, cmap=cmap, alpha=.7)
-    cs = ax.contourf(xx, yy, 1. - z, 2,
-                     colors=[cmap(0.10), cmap(0.5), cmap(0.9)],
-                     # cmap(0.32), cmap(0.78), cmap(0.9)],
-                     alpha=.5)
-    # ax.contour(cs, levels=[0, 0.5, 1.], colors='r')
-    ax.scatter(x_data[pass_fail], y_data[pass_fail],
-               c='none', edgecolor=cmap(0.5 - from_middle), label='Pass', s=2)
-    ax.scatter(x_data[pass_fail == False], y_data[pass_fail == False],
-               c='none', edgecolor=cmap(0.5 + from_middle), label='Fail', s=2)
+    z[z < 0] = 0.
+    z = z.reshape(xx.shape)# * dist_between_pass_fail_colors + (1. - dist_between_pass_fail_colors) / 2 + shift_colors
+    # fail_color, pass_color = np.min(z), np.max(z)
+    pass_color = 0.5 * (1. + dist_between_pass_fail_colors) + shift_colors
+    fail_color = 0.5 * (1. - dist_between_pass_fail_colors) + shift_colors
+
+    cmap_mod = truncate_colormap(cmap, minval=fail_color, maxval=pass_color)
+
+    cs = ax.contourf(xx, yy, z, 2, cmap=cmap_mod, alpha=region_alpha,
+                     vmin=0, vmmax=1)
+    ax.scatter(x_data[pass_fail], y_data[pass_fail], linewidths=0.5,
+               c='none', edgecolor=cmap_mod(1.), label='Pass', s=10)
+    ax.scatter(x_data[pass_fail == False], y_data[pass_fail == False], linewidths=1,
+               c='none', edgecolor=cmap_mod(0.), label='Fail', s=10)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),
               prop={'family': 'Open Sans Condensed', 'size': 12})
 
     xlims = np.array([np.around(xx.min(), 2), np.around(xx.max(), 2)])
     ylims = np.array([np.around(yy.min(), 2), np.around(yy.max(), 2)])
-    ax.set_xlim(xlims)
-    ax.set_ylim(ylims)
+    # ax.set_xlim(xlims)
+    # ax.set_ylim(ylims)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
@@ -154,7 +182,7 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     ndivs = 4
     xticks = [xlims[0] + xlims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
              + [xlims[1]]
-    xtick_labels = ['{}%'.format(p * 100) for p in xticks]
+    xtick_labels = ['{:.1f}%'.format(p * 100) for p in xticks]
     ax.set_xticks(xticks)
     ax.set_xticklabels(xtick_labels,
                        {'fontname': 'Open Sans Condensed', 'size': 11})
@@ -162,7 +190,7 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     ndivs = 6
     yticks = [ylims[0] + ylims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
              + [ylims[1]]
-    ytick_labels = ['{}%'.format(p * 100) for p in yticks]
+    ytick_labels = ['{:.1f}%'.format(p * 100) for p in yticks]
     ax.set_yticks(yticks)
     ax.set_yticklabels(ytick_labels,
                        {'fontname': 'Open Sans Condensed', 'size': 11})
@@ -178,4 +206,4 @@ def logistic_regression_plot(most_influential_factors, pass_fail,
     #     # plt.clf()
     #     # plt.close()
 
-    return ax
+    return ax, cmap_mod
