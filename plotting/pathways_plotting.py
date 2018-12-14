@@ -9,8 +9,10 @@ import seaborn as sns
 import pandas as pd
 from copy import deepcopy
 from matplotlib.patches import Ellipse
+import matplotlib as mpl
 
 tick_font_size = 10
+axis_font_size = 12
 
 def plot_construction_moment(pathways_utility, s, rdm,
                              savefig_directory=''):
@@ -75,29 +77,35 @@ def create_cmap(pathways, ninfra):
     return cmap, normalize, bounds
 
 
-def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  n_existing_sources,
-                           savefig_directory='', nrealizations=1000,
-                           sort_by=(), ninfra=0, sources=(),
-                           construction_order=(),
-                           utility_name='', year0=0, suffix=''):
+def plot_colormap_pathways(pathways_utility, nweeks, source_colormap_id,
+                           solution, rdm, n_existing_sources, ax, ax_cb,
+                           savefig_directory='', nrealizations=1000, sort_by=(),
+                           sources=(), utility_name='', year0=0, suffix=''):
 
-    fig, ax = plt.subplots(figsize=(8, 5))
     x, y, pathways = get_mesh_pathways(pathways_utility, nweeks,
                                        n_existing_sources, len(sources),
                                        nrealizations=nrealizations)
+
+    cmap = cm.get_cmap('tab20b')
+    cmap_mod = mpl.colors.LinearSegmentedColormap.from_list('Custom cmap',
+        [cmap(i) for i in source_colormap_id[:, 1]], len(source_colormap_id[:, 1]))
+
+    pathways_cp = deepcopy(pathways)
+    for i in range(len(source_colormap_id)):
+        pathways[pathways_cp == source_colormap_id[i, 0]] = i
+
     if len(sort_by) == 0:
         pathways = np.array(sorted(pathways, key=lambda x: sum(x)))
     else:
         pathways = np.array(pathways)[sort_by]
 
-    # cmap, normalize, bounds = create_cmap(pathways, ninfra+1)
-
     body_font = 'Open Sans Condensed'
 
-    ax.imshow(pathways, origin='lower', cmap=cm.get_cmap('tab20'),# norm=normalize,
-              aspect='auto', vmin=0)
-    ax.set_xlabel('Year', **{'fontname': body_font, 'size' : tick_font_size})
-    ax.set_ylabel('Realization', **{'fontname': body_font, 'size' : tick_font_size})
+    ax.imshow(pathways, origin='lower', cmap=cmap_mod, aspect='auto',
+              vmin=0, vmax=cmap_mod.N)
+    ax.set_xlabel('Year', **{'fontname': body_font, 'size' : axis_font_size})
+    ax.set_ylabel('Realization',
+                  **{'fontname': body_font, 'size' : axis_font_size})
 
     ax.grid(False)
     ax.set_yticks([0, nrealizations])
@@ -109,35 +117,40 @@ def plot_colormap_pathways(pathways_utility, nweeks, solution, rdm,  n_existing_
     ax.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
                        {'fontname': body_font, 'size': tick_font_size})
 
-    if len(construction_order) > 0:
-        # sources = np.hstack((['Status-quo'], sources))
-        ax2 = fig.add_axes([0.75, 0.1, 0.03, 0.8])
-        pos = ax.get_position()
-        new_pos = [pos.x0, 0.1, 0.7 - pos.x0, 0.9]
-        ax.set_position(new_pos)
-        n_prospective_sources = len(sources[n_existing_sources - 1:])
-        bounds = 1. / n_prospective_sources * np.arange(n_prospective_sources)
-        cb = ColorbarBase(ax2,
-                          cmap=cm.get_cmap('tab20'),
-                          spacing='proportional',
-                          ticks=bounds,
-                          boundaries=bounds,
-                          format='%1i')
+    pos = ax.get_position()
+    new_pos = [pos.x0, 0.1, 0.7 - pos.x0, 0.9]
+    # ax.set_position(new_pos)
+    # ax_cb = fig.add_axes([0.75, 0.1, 0.03, 0.8])
 
-        cb.ax.set_title('Infrastructure\nOptions', **{'fontname': 'Open Sans',
-                                                   'size' : tick_font_size})
-        # ax2.set_ylabel('Very custom cbar [-]', size=12)
-        cb.set_ticks(bounds + 1. / (2. * n_prospective_sources))
-        cb.set_ticklabels(sources[n_existing_sources:],
-                          {'fontname': body_font, 'size': tick_font_size})
-        cb.ax.tick_params(labelsize=tick_font_size)
+    bounds = np.arange(len(source_colormap_id) + 1)
+    norm = mpl.colors.BoundaryNorm(bounds, cmap_mod.N)
+
+    cb = mpl.colorbar.ColorbarBase(ax_cb, cmap=cmap_mod, norm=norm,
+                                   orientation='horizontal',
+                                   spacing='proportional', ticks=bounds,
+                                   boundaries=bounds)
+
+    ax_cb.set_position([0.25, 0.25, 0.5, 0.01])
+    cb.set_ticks(np.arange(len(source_colormap_id)) + 0.5)
+    cb.set_ticklabels(sources[source_colormap_id[:, 0]])
+    # ax_cb.tick_params(axis='x', rotation=45)
+    for l in cb.ax.yaxis.get_ticklabels():
+        l.set_family(body_font)
+        l.set_size(tick_font_size)
+    cb.ax.tick_params(labelsize=tick_font_size, rotation=45)
+    for tick in cb.ax.xaxis.get_major_ticks():
+        tick.label1.set_horizontalalignment('right')
+    cb.ax.set_xlabel('Infrastructure option',
+                     **{'fontname': body_font, 'size': axis_font_size})
 
     if savefig_directory == '':
         plt.show()
     else:
-        plt.savefig(savefig_directory +
-                    'Pathways_s{}_RDM{}_{}_{}_colormap.png'.format(
-                        solution, rdm, suffix, utility_name))
+        pass
+        # plt.savefig(savefig_directory +
+        #             'Pathways_s{}_RDM{}_{}_{}_colormap.png'.format(
+        #                 solution, rdm, suffix, utility_name))
+        # plt.close()
 
 
 def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
@@ -154,7 +167,7 @@ def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
                                                    'hspace' : 0.3})
         ax2.plot(lt_rof)
         ax2.set_xlabel('Year', **{'fontname':'CMU Bright', 'size' : tick_font_size})
-        ax2.set_ylabel('Long-term ROF [-]', **{'fontname':'CMU Bright', 'size' : tick_font_size})
+        ax2.set_ylabel('Long-term ROF [-]', **{'fontname': 'CMU Bright', 'size' : tick_font_size})
         xticks_at = np.arange(0, nweeks, 52.1 * 5)
         ax2.set_xticks(xticks_at)
         ax2.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
@@ -215,19 +228,21 @@ def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
 
     # Plot horizontal lines
     for line, color in zip(horizontal_lines, horizontal_lines_colors):
-        # count += 1
-        # print '{}/{}'.format(count, nlines)
         ax.plot(line[0], line[1], c=color, alpha=alpha, lw=3)
 
     labels = [sources[-1]] + list(sources[construction_order])
     ax.set_yticks(range(0, len(labels)))
     ax.set_ylim(-0.1, 0.1 + ninfra)
-    ax.set_yticklabels(labels, **{'fontname':'CMU Bright', 'size' : tick_font_size})
-    ax.set_xlabel('Year', **{'fontname':'CMU Bright', 'size' : tick_font_size})
-    ax.set_ylabel('Infrastructure Option', **{'fontname':'CMU Bright', 'size' : tick_font_size})
+    ax.set_yticklabels(labels,
+                       **{'fontname': 'CMU Bright', 'size': tick_font_size})
+    ax.set_xlabel('Year',
+                  **{'fontname': 'CMU Bright', 'size': tick_font_size})
+    ax.set_ylabel('Infrastructure Option',
+                  **{'fontname': 'CMU Bright', 'size': tick_font_size})
     xticks_at = np.arange(0, nweeks, 52.1 * 5)
     ax.set_xticks(xticks_at)
-    ax.set_xticklabels((xticks_at / 52.1).astype(int) + year0, {'fontname':'CMU Bright', 'size' : tick_font_size})
+    ax.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
+                       {'fontname': 'CMU Bright', 'size': tick_font_size})
     ax.spines['top'].set_visible(False)
     # ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
@@ -245,10 +260,11 @@ def plot_2d_pathways(pathways_utility, nweeks, s, rdm, sources,
                             '_unique' if len(lt_rof) > 0 else ''))
 
 
-def plot_2d_pathways_color_by_dynamic(pathways_utility, pathway_number, state_var_series, nweeks, s, rdm, sources,
-                     construction_order, savefig_directory='', ninfra=0,
-                     utility_name='', year0=0, monocromatic=False,
-                     lt_rof=()):
+def plot_2d_pathways_color_by_dynamic(pathways_utility, pathway_number,
+                                      state_var_series, nweeks, s, rdm, sources,
+                                      construction_order, savefig_directory='',
+                                      ninfra=0, utility_name='', year0=0,
+                                      monocromatic=False, lt_rof=()):
     nrealizations = len(pathways_utility)
 
     if len(lt_rof) == 0:
@@ -258,12 +274,14 @@ def plot_2d_pathways_color_by_dynamic(pathways_utility, pathway_number, state_va
                                       gridspec_kw={'height_ratios' : [3, 1],
                                                    'hspace' : 0.3})
         ax2.plot(lt_rof)
-        ax2.set_xlabel('Year', **{'fontname':'CMU Bright', 'size' : tick_font_size})
-        ax2.set_ylabel('Long-term ROF [-]', **{'fontname':'CMU Bright', 'size' : tick_font_size})
+        ax2.set_xlabel('Year',
+                       **{'fontname': 'CMU Bright', 'size': tick_font_size})
+        ax2.set_ylabel('Long-term ROF [-]',
+                       **{'fontname': 'CMU Bright', 'size': tick_font_size})
         xticks_at = np.arange(0, nweeks, 52.1 * 5)
         ax2.set_xticks(xticks_at)
         ax2.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
-                            **{'fontname':'CMU Bright', 'size' : tick_font_size})
+                            **{'fontname': 'CMU Bright', 'size': tick_font_size})
         ax2.set_ylim(0, 0.2)
         # ax2.set_yticklabels(list(ax2.get_yticklabels()),
         #                     **{'fontname':'CMU Bright', 'size' : tick_font_size})
@@ -405,8 +423,7 @@ def plot_pathways_id(pathways_all_rdms, s, rdm, sources, construction_order,
     plot_colormap_pathways(pathways_all_rdms_copy, 2400, s, rdm,
                            savefig_directory=savefig_directory,
                            nrealizations=1000, sort_by=sort_by,
-                           ninfra=ninfra, sources=sources,
-                           construction_order=construction_order,
+                           sources=sources,
                            utility_name=utility_name, year0=year0)
     plot_2d_pathways(pathways_all_rdms_copy, 2400, s, rdm, sources,
                      construction_order, ninfra=ninfra,

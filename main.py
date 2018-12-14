@@ -143,8 +143,9 @@ def calculate_pseudo_robustnesses(performance_criteria, objectives_by_solution,
     return robustnesses
 
 
-def plot_pathways_utility(pathways, solution, utility_to_plot, name,
-                          rdm, n_existing_sources, files_root_directory, sources,
+def plot_pathways_utility(pathways, source_colormap_id, solution,
+                          utility_to_plot, name, rdm, n_existing_sources,
+                          files_root_directory, sources, infra_built, ax, ax_cb,
                           suffix=''):
     # # Only low and high WJLWTP had permitting times.
     # important_factors_multiple_solutions_plot(most_influential_factors_all,
@@ -152,29 +153,21 @@ def plot_pathways_utility(pathways, solution, utility_to_plot, name,
     #                                           create_labels_list(),
     #                                           files_root_directory)
 
-    ninfra = np.array([0, 6, 0, 4])[utility_to_plot]
-
     # Plot pathways
     pathways_list_utility_high = \
         get_pathways_by_utility_realization(pathways[0])
     utility_pathways_high = pathways_list_utility_high[utility_to_plot]
 
-    # replace infrastructure id by construction order
-    construction_order = get_infra_order(utility_pathways_high)
-    # utility_pathways_high_copy = \
-    #     convert_pathways_from_source_id_to_construction_id(
-    #         utility_pathways_high,
-    #         construction_order)
     utility_pathways_high_copy = utility_pathways_high
 
     plot_colormap_pathways(utility_pathways_high_copy, 2400,
-                           solution, rdm, n_existing_sources,
-                           savefig_directory=files_root_directory,
-                           # + 'Figures/',
-                           nrealizations=1000,
-                           ninfra=ninfra, sources=sources,
-                           construction_order=construction_order,
-                           utility_name=name, year0=2015, suffix=suffix)
+                                     source_colormap_id, solution,
+                                     rdm, n_existing_sources, ax, ax_cb,
+                                     savefig_directory=files_root_directory, # + 'Figures/',
+                                     nrealizations=1000, sources=sources,
+                                     utility_name=name, year0=2015,
+                                     suffix=suffix)
+
 
 
 def plot_decision_vars(dec_vars, robust_for_all):
@@ -288,7 +281,7 @@ def plot_scenario_discovery_pathways_solution_utility(utilities,
                                                       ntrees, tree_depth,
                                                       apply_criteria_on_objs,
                                                       non_repeated_dec_var_ix,
-                                                      sources, su):
+                                                      sources, su, ax):
     cmap = cm.get_cmap('RdGy')
     from_middle = 0.5
     dist_between_pass_fail_colors = 0.7
@@ -297,12 +290,12 @@ def plot_scenario_discovery_pathways_solution_utility(utilities,
 
     s, u = su
     most_influential_factors_all_u, pass_fail_all_u, \
-    non_crashed_rdm_all_u, lr_coef_all_u, ax, cmap_mod = \
+    non_crashed_rdm_all_u, feature_importances, cmap_mod = \
         get_influential_rdm_factors_boosted_trees(
             objectives_by_solution,
             non_crashed_by_solution,
             performance_criteria,
-            np.array(apply_criteria_on_objs) + u * 6, rdm_factors,
+            np.array(apply_criteria_on_objs) + u * 6, rdm_factors, ax,
             not_group_objectives=True,
             solutions=[s],
             plot=True,
@@ -316,7 +309,7 @@ def plot_scenario_discovery_pathways_solution_utility(utilities,
 
     best_rdm, worse_rdm = get_best_worse_rdm_factors_based \
         (non_crashed_rdm_all_u[0], most_influential_factors_all_u[0],
-         pass_fail_all_u[0], lr_coef_all_u[0])
+         pass_fail_all_u[0], feature_importances[0])
 
     # best_rdm, worse_rdm = get_best_worse_rdm_objectives_based(
     #     objectives_by_solution[s], performance_criteria,
@@ -339,33 +332,58 @@ def plot_scenario_discovery_pathways_solution_utility(utilities,
                    label='Most Unfavorable')
         ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),
                   prop={'family': 'Open Sans Condensed', 'size': 12})
-        plt.tight_layout()
-        plt.savefig('{}/scenario_discovery_solution_{}_{}.png'.format(
-            files_root_directory, s, u))
+        # plt.tight_layout()
+        # plt.savefig('{}/scenario_discovery_solution_{}_{}.png'.format(
+        #     files_root_directory, s, u))
+        # plt.close()
 
+    return best_rdm, worse_rdm
+
+
+def load_pathways(non_crashed_by_solution, non_repeated_dec_var_ix, solution,
+                  best_worse_rdm, files_root_directory):
+    non_crashed_rdms = len(non_crashed_by_solution[solution])
     best_rdm_original_numbering = \
-        np.arange(len(non_crashed_by_solution[s]))[non_crashed_by_solution[s]][
-            best_rdm]
+        np.arange(non_crashed_rdms)[non_crashed_by_solution[solution]][
+            best_worse_rdm[0]]
     worse_rdm_original_numbering = \
-        np.arange(len(non_crashed_by_solution[s]))[non_crashed_by_solution[s]][
-            worse_rdm]
+        np.arange(non_crashed_rdms)[non_crashed_by_solution[solution]][
+            best_worse_rdm[1]]
+
     pathways = load_pathways_solution(
         files_root_directory + '../re-evaluation_against_du/pathways/',
-        non_repeated_dec_var_ix[s],
-        [best_rdm_original_numbering, worse_rdm_original_numbering])
+        non_repeated_dec_var_ix[solution],
+        [best_rdm_original_numbering, worse_rdm_original_numbering]
+    )
 
-    plot_pathways_utility([pathways[0]], s, u, utilities[u], best_rdm,
-                          n_existing_sources, files_root_directory, sources,
-                          suffix='best_rdm')
+    return pathways
 
-    plot_pathways_utility([pathways[1]], s, u, utilities[u], worse_rdm,
-                          n_existing_sources, files_root_directory, sources,
-                          suffix='worse_rdm')
 
-    return
+def plot_pathways_solutions_rdms(infra_built, utilities, n_existing_sources,
+                                 source_colormap_id, files_root_directory,
+                                 sources, pathways_solution_rdm_ax):
+
+    utility = pathways_solution_rdm_ax[3]
+    plot_pathways_utility([pathways_solution_rdm_ax[0]],
+                                    source_colormap_id,
+                                    pathways_solution_rdm_ax[1],
+                                    utility, utilities[utility],
+                                    pathways_solution_rdm_ax[2],
+                                    n_existing_sources,
+                                    files_root_directory, sources, infra_built,
+                                    pathways_solution_rdm_ax[5],
+                                    pathways_solution_rdm_ax[6],
+                                    suffix=pathways_solution_rdm_ax[4])
+
+    # plot_pathways_utility([pathways[1]], solution, utility, utility_name,
+    #                       best_worse_rdm[1], n_existing_sources,
+    #                       files_root_directory, sources,
+    #                       suffix='worse_rdm')
+
 
 
 def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
+                                     source_colormap_id,
                                      non_crashed_by_solution,
                                      performance_criteria,
                                      files_root_directory, rdm_factors,
@@ -375,33 +393,68 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
     ntrees = 100
     tree_depth = 2
     su_all = []
-    for s in [most_robust_for_each[1], most_robust_for_each[3]]:
-        for u in range(1, len(utilities)):
+    utilitiy_ids = range(1, len(utilities))
+    sols = [most_robust_for_each[1], most_robust_for_each[3]]
+    for s in sols:
+        su_all = []
+        for u in utilitiy_ids:
             su_all.append([s, u])
 
-    partial_create_figures = partial(
-        plot_scenario_discovery_pathways_solution_utility,
-        utilities, objectives_by_solution,
-        non_crashed_by_solution,
-        performance_criteria,
-        files_root_directory, rdm_factors,
-        n_existing_sources, ntrees, tree_depth, apply_criteria_on_objs,
-        non_repeated_dec_var_ix, sources)
+        fig, axes = plt.subplots(4, len(utilitiy_ids), figsize=(10, 12))
 
-    Pool().map(partial_create_figures, su_all)
+        best_rdm_worse_rdm_axes = []
+        for su, axes_row in zip(su_all, axes.T):
+            best_rdm_worse_rdm_axes.append(
+              plot_scenario_discovery_pathways_solution_utility(utilities,
+                                                                objectives_by_solution,
+                                                                non_crashed_by_solution,
+                                                                performance_criteria,
+                                                                files_root_directory,
+                                                                rdm_factors,
+                                                                n_existing_sources,
+                                                                ntrees, tree_depth,
+                                                                apply_criteria_on_objs,
+                                                                non_repeated_dec_var_ix,
+                                                                sources, su, axes_row[0])
+            )
 
-    # for su in su_all:
-    #     plot_scenario_discovery_pathways_solution_utility(utilities,
-    #                                                       objectives_by_solution,
-    #                                                       non_crashed_by_solution,
-    #                                                       performance_criteria,
-    #                                                       files_root_directory,
-    #                                                       rdm_factors,
-    #                                                       n_existing_sources,
-    #                                                       ntrees, tree_depth,
-    #                                                       apply_criteria_on_objs,
-    #                                                       non_repeated_dec_var_ix,
-    #                                                       sources, su)
+        best_worse_rdm = [[bwa[0], bwa[1]] for bwa in best_rdm_worse_rdm_axes]
+
+        # Load pathways before plotting. Necessary to determine what infrastructure
+        # is built across all realizations to have as few sources as possible in
+        # the plots' colorbar.
+        pathways = []
+        pathways_solutions_rdm = []
+        for bw, u, axes_row in zip(best_worse_rdm,
+                            utilitiy_ids * 2, axes.T):
+            pathways_sol_rdm = load_pathways(non_crashed_by_solution,
+                                             non_repeated_dec_var_ix, s, bw,
+                                             files_root_directory)
+            pathways += pathways_sol_rdm
+            pathways_solutions_rdm.append([pathways_sol_rdm[0], s, bw[0],
+                                           u, 'best_rdm', axes_row[1], axes_row[3]])
+            pathways_solutions_rdm.append([pathways_sol_rdm[1], s, bw[1],
+                                           u, 'worse_rdm', axes_row[2], axes_row[3]])
+
+        infra_built = np.unique(np.vstack(pathways)[:, 3])
+
+        for psr in pathways_solutions_rdm:
+            plot_pathways_solutions_rdms(infra_built, utilities, n_existing_sources,
+                                         source_colormap_id, files_root_directory,
+                                         sources, psr)
+
+        for ax in axes[1]:
+            ax.get_xaxis().set_visible(False)
+
+        for ax in axes[1:3, 1:3].ravel():
+            ax.get_yaxis().set_visible(False)
+
+        for ax in axes[3]:
+            for l in ax.get_xticklabels():
+                l.set_fontproperties('Open Sans Condensed')
+
+        plt.savefig(files_root_directory + '/test{}.svg'.format(s))
+        plt.close()
 
 
 def create_plots():
@@ -602,14 +655,31 @@ def create_plots():
                                                  robustnesses_ordered_by_sol_id[
                                                      robust_for_all[
                                                          0]] - 0.001)))
-
+    cmap_colors = cm.get_cmap('tab20b').colors
+    source_colormap_id = np.array([[14, 0],
+                                    [20, 2],
+                                    [21, 3],
+                                    [9, 4],
+                                    [15, 5],
+                                    [16, 6],
+                                    [18, 8],
+                                    [19, 9],
+                                    [22, 13],
+                                    [23, 14],
+                                    [len(sources) - 1, 15],
+                                    [7, 16],
+                                    [8, 17],
+                                    [17, 18]])
+    
     plot_scenario_discovery_pathways(utilities, objectives_by_solution,
+                                     source_colormap_id,
                                      non_crashed_by_solution,
                                      performance_criteria,
                                      files_root_directory,
-                                     rdm_factors, 8, apply_criteria_on_objs,
+                                     rdm_factors, 7, apply_criteria_on_objs,
                                      non_repeated_dec_var_ix,
                                      most_robust_for_each, sources)
+
 
 if __name__ == '__main__':
     create_plots()

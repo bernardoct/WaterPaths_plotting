@@ -44,7 +44,7 @@ def prepare_data_for_classification(objectives_by_solution, rdm_factors,
 
 
 def logistic_regression_classification(objectives_by_solution, rdm_factors,
-                                       sol_number,
+                                       sol_number, ax,
                                        performance_criteria, plot=False,
                                        files_root_directory=''):
     non_crashed_rdm, pass_fail, nrdms = prepare_data_for_classification(
@@ -61,7 +61,7 @@ def logistic_regression_classification(objectives_by_solution, rdm_factors,
 
         if plot:
             factor_mapping_plot(most_influential_factors, pass_fail,
-                                non_crashed_rdm, sol_number, lr,
+                                non_crashed_rdm, sol_number, lr, ax,
                                 files_root_directory=files_root_directory)
         return most_influential_factors, pass_fail, non_crashed_rdm, lr.coef_[0]
     else:
@@ -70,9 +70,8 @@ def logistic_regression_classification(objectives_by_solution, rdm_factors,
 
 
 def boosted_trees_classification(objectives_by_solution, rdm_factors,
-                                 sol_number,
-                                 performance_criteria, plot=False,
-                                 n_trees=100, tree_depth=3,
+                                 sol_number, performance_criteria, ax,
+                                 plot=False, n_trees=100, tree_depth=3,
                                  files_root_directory='', name_suffix='',
                                  cmap=cm.get_cmap('coolwarm'),
                                  dist_between_pass_fail_colors=0.7,
@@ -91,25 +90,25 @@ def boosted_trees_classification(objectives_by_solution, rdm_factors,
 
         # get most influential pair of factors
         most_influential_factors = np.argsort(gbc.feature_importances_)[::-1]
-        feature_importances = deepcopy(gbc.feature_importances_)
 
         if plot:
-            ax, cmap_mod = factor_mapping_plot(most_influential_factors, pass_fail,
-                                     non_crashed_rdm, sol_number, gbc,
+            cmap_mod, feature_importances = \
+                factor_mapping_plot(most_influential_factors, pass_fail,
+                                     non_crashed_rdm, sol_number, gbc, ax,
                                      files_root_directory=files_root_directory,
                                      name_suffix=name_suffix, cmap=cmap,
                                      dist_between_pass_fail_colors=dist_between_pass_fail_colors,
                                      region_alpha=region_alpha,
                                      shift_colors=shift_colors)
         return most_influential_factors, pass_fail, non_crashed_rdm, \
-               feature_importances, ax, cmap_mod
+               feature_importances, cmap_mod
     else:
         return -np.ones(nrdms, dtype=int), pass_fail, \
                [False] * nrdms, np.zeros(nrdms), None
 
 
 def factor_mapping_plot(most_influential_factors, pass_fail,
-                        non_crashed_rdm, sol_number, classifier,
+                        non_crashed_rdm, sol_number, classifier, ax,
                         files_root_directory='', name_suffix='',
                         cmap=cm.get_cmap('coolwarm'),
                         dist_between_pass_fail_colors=0.7,
@@ -118,8 +117,9 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
 
     labels = create_labels_list()
 
-    fig, ax = plt.subplots(figsize=(5, 4))
+    # fig, ax = plt.subplots(figsize=(5, 4))
     feature_importances = deepcopy(classifier.feature_importances_)
+    feature_importances /= np.sum(feature_importances)
 
     ax.set_xlabel('{} ({:.2f}%)'.format(
         labels[most_influential_pair[0]],
@@ -154,19 +154,20 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
 
     z = classifier.predict_proba(dummy_points)[:, 1]
     z[z < 0] = 0.
-    z = z.reshape(xx.shape)# * dist_between_pass_fail_colors + (1. - dist_between_pass_fail_colors) / 2 + shift_colors
-    # fail_color, pass_color = np.min(z), np.max(z)
+    z = z.reshape(xx.shape)
+
     pass_color = 0.5 * (1. + dist_between_pass_fail_colors) + shift_colors
     fail_color = 0.5 * (1. - dist_between_pass_fail_colors) + shift_colors
 
     cmap_mod = truncate_colormap(cmap, minval=fail_color, maxval=pass_color)
 
-    cs = ax.contourf(xx, yy, z, 2, cmap=cmap_mod, alpha=region_alpha,
+    ax.contourf(xx, yy, z, 2, cmap=cmap_mod, alpha=region_alpha,
                      vmin=0, vmmax=1)
     ax.scatter(x_data[pass_fail], y_data[pass_fail], linewidths=0.5,
-               c='none', edgecolor=cmap_mod(1.), label='Pass', s=10)
-    ax.scatter(x_data[pass_fail == False], y_data[pass_fail == False], linewidths=1,
-               c='none', edgecolor=cmap_mod(0.), label='Fail', s=10)
+               c='none', edgecolor=cmap_mod(1.), label='Pass', s=3)
+    ax.scatter(x_data[pass_fail == False], y_data[pass_fail == False],
+               linewidths=1, c='none', edgecolor=cmap_mod(0.),
+               label='Fail', s=3)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),
               prop={'family': 'Open Sans Condensed', 'size': 12})
 
@@ -195,15 +196,15 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
     ax.set_yticklabels(ytick_labels,
                        {'fontname': 'Open Sans Condensed', 'size': 11})
 
-    # plt.show()
-    if len(files_root_directory) > 0:
-        plt.savefig('{}/scenario_discovery_solution_{}_{}.png'.format(
-            files_root_directory, sol_number, name_suffix))
-        # plt.clf()
-        # plt.close()
-    # else:
-    #     plt.show()
+    # # plt.show()
+    # if len(files_root_directory) > 0:
+    #     plt.savefig('{}/scenario_discovery_solution_{}_{}.png'.format(
+    #         files_root_directory, sol_number, name_suffix))
     #     # plt.clf()
     #     # plt.close()
+    # # else:
+    # #     plt.show()
+    # #     # plt.clf()
+    # #     # plt.close()
 
-    return ax, cmap_mod
+    return cmap_mod, feature_importances

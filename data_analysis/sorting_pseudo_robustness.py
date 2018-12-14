@@ -105,7 +105,7 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution,
                                               non_crashed_by_solution,
                                               performance_criteria,
                                               apply_criteria_on_objs,
-                                              rdm_factors,
+                                              rdm_factors, ax,
                                               not_group_objectives=False,
                                               solutions=(),
                                               n_trees=100, tree_depth=2,
@@ -139,12 +139,12 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution,
         # objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
 
         most_influential_factors, pass_fail, non_crashed_rdm, \
-        feature_importance, ax, cmap_mod = \
+        feature_importance, cmap_mod = \
             boosted_trees_classification(
                 objectives,
                 # objectives_normalized,
                 rdm_factors[non_crashed_by_solution[sol_number]],
-                sol_number, performance_criteria,
+                sol_number, performance_criteria, ax,
                 plot=plot, n_trees=n_trees, tree_depth=tree_depth,
                 files_root_directory=files_root_directory if plot else '',
                 name_suffix=name_suffix, cmap=cmap,
@@ -158,7 +158,7 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution,
         feature_importance_all.append(feature_importance)
 
     return most_influential_factors_all, pass_fail_all, \
-           non_crashed_rdm_all, feature_importance_all, ax, cmap_mod
+           non_crashed_rdm_all, feature_importance_all, cmap_mod
 
 
 def influential_factors_plot(objectives_by_solution, non_crashed_by_solution,

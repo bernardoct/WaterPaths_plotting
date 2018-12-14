@@ -68,11 +68,11 @@ def get_mesh_pathways(pathways_utility, nweeks, n_existing_sources, n_sources,
 
     x, y = np.meshgrid(range(nrealizations), range(nweeks))
 
-    z = np.ones((nrealizations, nweeks)) * (n_sources - 1) - n_existing_sources
+    z = np.ones((nrealizations, nweeks)) * (n_sources - 1)# - n_existing_sources
     for p in pathways_utility:
         r = p[0][0]
-        z[r] = create_fixed_length_pathways_array(p[1], p[2], nweeks, n_sources) - \
-               n_existing_sources
+        z[r] = create_fixed_length_pathways_array(p[1], p[2], nweeks, n_sources)# - \
+              # n_existing_sources
 
     return x, y, z
 
