@@ -112,7 +112,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, source_colormap_id,
     ax.set_yticklabels(['Little and late\nnew infrastructure', 'Significant '
                        'and early\nnew infrastructure'],
                        {'fontname': body_font, 'size': tick_font_size})
-    xticks_at = np.arange(0, nweeks, 52.1 * 5)
+    xticks_at = np.arange(0, nweeks, 52.1 * 15)
     ax.set_xticks(xticks_at)
     ax.set_xticklabels((xticks_at / 52.1).astype(int) + year0,
                        {'fontname': body_font, 'size': tick_font_size})
@@ -130,16 +130,16 @@ def plot_colormap_pathways(pathways_utility, nweeks, source_colormap_id,
                                    spacing='proportional', ticks=bounds,
                                    boundaries=bounds)
 
-    ax_cb.set_position([0.25, 0.25, 0.5, 0.01])
+    ax_cb.set_position([0.4, 0.90, 0.5, 0.01])
     cb.set_ticks(np.arange(len(source_colormap_id)) + 0.5)
     cb.set_ticklabels(sources[source_colormap_id[:, 0]])
     # ax_cb.tick_params(axis='x', rotation=45)
     for l in cb.ax.yaxis.get_ticklabels():
         l.set_family(body_font)
         l.set_size(tick_font_size)
-    cb.ax.tick_params(labelsize=tick_font_size, rotation=45)
-    for tick in cb.ax.xaxis.get_major_ticks():
-        tick.label1.set_horizontalalignment('right')
+    cb.ax.tick_params(labelsize=tick_font_size, rotation=90)
+    # for tick in cb.ax.xaxis.get_major_ticks():
+    #     tick.label1.set_horizontalalignment('right')
     cb.ax.set_xlabel('Infrastructure option',
                      **{'fontname': body_font, 'size': axis_font_size})
 

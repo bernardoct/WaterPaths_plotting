@@ -168,13 +168,13 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
     ax.scatter(x_data[pass_fail == False], y_data[pass_fail == False],
                linewidths=1, c='none', edgecolor=cmap_mod(0.),
                label='Fail', s=3)
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5),
-              prop={'family': 'Open Sans Condensed', 'size': 12})
+    # ax.legend(loc='lower center', bbox_to_anchor=(1, 0.5),
+    #           prop={'family': 'Open Sans Condensed', 'size': 12})
 
     xlims = np.array([np.around(xx.min(), 2), np.around(xx.max(), 2)])
     ylims = np.array([np.around(yy.min(), 2), np.around(yy.max(), 2)])
-    # ax.set_xlim(xlims)
-    # ax.set_ylim(ylims)
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(False)
@@ -191,7 +191,7 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
     ndivs = 6
     yticks = [ylims[0] + ylims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
              + [ylims[1]]
-    ytick_labels = ['{:.1f}%'.format(p * 100) for p in yticks]
+    ytick_labels = ['{:.0f}%'.format(p * 100) for p in yticks]
     ax.set_yticks(yticks)
     ax.set_yticklabels(ytick_labels,
                        {'fontname': 'Open Sans Condensed', 'size': 11})

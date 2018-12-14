@@ -106,8 +106,8 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution,
                                               performance_criteria,
                                               apply_criteria_on_objs,
                                               rdm_factors, ax,
+                                              sol_number,
                                               not_group_objectives=False,
-                                              solutions=(),
                                               n_trees=100, tree_depth=2,
                                               plot=False, name_suffix='',
                                               files_root_directory='',
@@ -115,50 +115,35 @@ def get_influential_rdm_factors_boosted_trees(objectives_by_solution,
                                               dist_between_pass_fail_colors=0.7,
                                               region_alpha=0.2, shift_colors=0):
 
-    nsols = len(objectives_by_solution)
-    if len(solutions) == 0:
-        solutions = range(nsols)
+    print 'Performing scenario discovery for solution {}{}'.format(sol_number, name_suffix)
 
-    most_influential_factors_all, pass_fail_all, non_crashed_rdm_all, \
-    feature_importance_all = [], [], [], []
+    if not_group_objectives:
+        objectives = objectives_by_solution[sol_number][:, apply_criteria_on_objs]
+    else:
+        objectives = group_objectives(
+                    objectives_by_solution[sol_number],
+                    ['max', 'min', 'min', 'min',
+                     'min', 'min']
+                )[:, apply_criteria_on_objs]
 
-    for sol_number in solutions:
-        # Load RDM files in a single table
+    # objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
 
-        print 'Performing scenario discovery for solution {}{}'.format(sol_number, name_suffix)
+    most_influential_factors, pass_fail, non_crashed_rdm, \
+    feature_importance, cmap_mod = \
+        boosted_trees_classification(
+            objectives,
+            # objectives_normalized,
+            rdm_factors[non_crashed_by_solution[sol_number]],
+            sol_number, performance_criteria, ax,
+            plot=plot, n_trees=n_trees, tree_depth=tree_depth,
+            files_root_directory=files_root_directory if plot else '',
+            name_suffix=name_suffix, cmap=cmap,
+            dist_between_pass_fail_colors=dist_between_pass_fail_colors,
+            region_alpha=region_alpha, shift_colors=shift_colors
+        )
 
-        if not_group_objectives:
-            objectives = objectives_by_solution[sol_number][:, apply_criteria_on_objs]
-        else:
-            objectives = group_objectives(
-                        objectives_by_solution[sol_number],
-                        ['max', 'min', 'min', 'min',
-                         'min', 'min']
-                    )[:, apply_criteria_on_objs]
-
-        # objectives_normalized = (objectives - objectives.min(axis=0)) / objectives.ptp(axis=0)
-
-        most_influential_factors, pass_fail, non_crashed_rdm, \
-        feature_importance, cmap_mod = \
-            boosted_trees_classification(
-                objectives,
-                # objectives_normalized,
-                rdm_factors[non_crashed_by_solution[sol_number]],
-                sol_number, performance_criteria, ax,
-                plot=plot, n_trees=n_trees, tree_depth=tree_depth,
-                files_root_directory=files_root_directory if plot else '',
-                name_suffix=name_suffix, cmap=cmap,
-                dist_between_pass_fail_colors=dist_between_pass_fail_colors,
-                region_alpha=region_alpha, shift_colors=shift_colors
-            )
-
-        most_influential_factors_all.append(most_influential_factors)
-        pass_fail_all.append(pass_fail)
-        non_crashed_rdm_all.append(non_crashed_rdm)
-        feature_importance_all.append(feature_importance)
-
-    return most_influential_factors_all, pass_fail_all, \
-           non_crashed_rdm_all, feature_importance_all, cmap_mod
+    return most_influential_factors, pass_fail, \
+           non_crashed_rdm, feature_importance, cmap_mod
 
 
 def influential_factors_plot(objectives_by_solution, non_crashed_by_solution,
