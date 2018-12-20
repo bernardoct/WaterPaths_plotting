@@ -78,7 +78,7 @@ def create_cmap(pathways, ninfra):
 
 
 def plot_colormap_pathways(pathways_utility, nweeks, source_colormap_id,
-                           solution, rdm, n_existing_sources, ax, ax_cb,
+                           solution, rdm, n_existing_sources, ax, ax_cb, cb_pos,
                            savefig_directory='', nrealizations=1000, sort_by=(),
                            sources=(), utility_name='', year0=0, suffix=''):
 
@@ -105,7 +105,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, source_colormap_id,
               vmin=0, vmax=cmap_mod.N)
     ax.set_xlabel('Year', **{'fontname': body_font, 'size' : axis_font_size})
     ax.set_ylabel('Realization',
-                  **{'fontname': body_font, 'size' : axis_font_size})
+                  **{'fontname': body_font, 'size': axis_font_size})
 
     ax.grid(False)
     ax.set_yticks([0, nrealizations])
@@ -130,16 +130,18 @@ def plot_colormap_pathways(pathways_utility, nweeks, source_colormap_id,
                                    spacing='proportional', ticks=bounds,
                                    boundaries=bounds)
 
-    ax_cb.set_position([0.4, 0.90, 0.5, 0.01])
+    ax_cb.set_position(cb_pos)
     cb.set_ticks(np.arange(len(source_colormap_id)) + 0.5)
     cb.set_ticklabels(sources[source_colormap_id[:, 0]])
-    # ax_cb.tick_params(axis='x', rotation=45)
     for l in cb.ax.yaxis.get_ticklabels():
         l.set_family(body_font)
         l.set_size(tick_font_size)
-    cb.ax.tick_params(labelsize=tick_font_size, rotation=90)
-    # for tick in cb.ax.xaxis.get_major_ticks():
-    #     tick.label1.set_horizontalalignment('right')
+    for l in cb.ax.xaxis.get_ticklabels():
+        l.set_rotation(35)
+        l.set_horizontalalignment('right')
+        l.set_verticalalignment('top')
+        l.set_family(body_font)
+        l.set_fontsize(tick_font_size)
     cb.ax.set_xlabel('Infrastructure option',
                      **{'fontname': body_font, 'size': axis_font_size})
 

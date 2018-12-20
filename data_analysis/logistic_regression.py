@@ -112,7 +112,7 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
                         files_root_directory='', name_suffix='',
                         cmap=cm.get_cmap('coolwarm'),
                         dist_between_pass_fail_colors=0.7,
-                        region_alpha=0.2, shift_colors=0):
+                        region_alpha=0.2, shift_colors=0, no_title=True):
     most_influential_pair = most_influential_factors[:2]
 
     labels = create_labels_list()
@@ -131,8 +131,9 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
         feature_importances[most_influential_pair[1]] * 100),
         {'fontname': 'Open Sans Condensed', 'size': 12}
     )
-    ax.set_title('RDM for Solution {} {}'.format(sol_number, name_suffix),
-                 {'fontname': 'Gill Sans MT', 'size': 16})
+    if not no_title:
+        ax.set_title('RDM for Solution {} {}'.format(sol_number, name_suffix),
+                     {'fontname': 'Gill Sans MT', 'size': 16})
 
     # Add legend and shrink current axis by 20% so that legend is not
     # outside plot.
@@ -182,7 +183,7 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
 
     ndivs = 4
     xticks = [xlims[0] + xlims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
-             + [xlims[1]]
+              + [xlims[1]]
     xtick_labels = ['{:.1f}%'.format(p * 100) for p in xticks]
     ax.set_xticks(xticks)
     ax.set_xticklabels(xtick_labels,

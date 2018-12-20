@@ -5,22 +5,22 @@ from functools import partial
 
 def create_labels_list():
     labels = [
-                 'Demand growth\nmultiplier',
-                 'Bond interest\nrate multiplier',
-                 'Bond term\nmultiplier',
-                 'Discount rate\nmultiplier',
+                 'Demand growth multiplier',
+                 'Bond interest rate multiplier',
+                 'Bond term multiplier',
+                 'Discount rate multiplier',
              ] + \
              [
-                 'Restriction effectiveness\nmultiplier OWASA',
-              'Restriction effectiveness\nmultiplier Durham',
-              'Restriction effectiveness\nmultiplier Cary',
-              'Restriction effectiveness\nmultiplier Raleigh'
+                 'Restriction multip. OWASA',
+              'Restriction multip. Durham',
+              'Restriction multip. Cary',
+              'Restriction multip. Raleigh'
              ] + \
-             ['Evaporation rate\nmultiplier']
+             ['Evaporation rate multiplier']
 
     infra_labels = [[
-        'Permitting time\nmultiplier {}'.format(i),
-        'Construction cost\nmultiplier {}'.format(i)
+        'Permitting time multiplier {}'.format(i),
+        'Construction cost multiplier {}'.format(i)
     ] for i in range(7, 25)]
 
     for il in infra_labels:
