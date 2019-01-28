@@ -103,7 +103,7 @@ def plot_colormap_pathways(pathways_utility, nweeks, source_colormap_id,
 
     ax.imshow(pathways, origin='lower', cmap=cmap_mod, aspect='auto',
               vmin=0, vmax=cmap_mod.N)
-    ax.set_xlabel('Year', **{'fontname': body_font, 'size' : axis_font_size})
+    ax.set_xlabel('Year', **{'fontname': body_font, 'size': axis_font_size})
     ax.set_ylabel('Realization',
                   **{'fontname': body_font, 'size': axis_font_size})
 

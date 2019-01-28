@@ -14,13 +14,16 @@ def process_decvars(dec_vars, utilities_names):
 
     return data
 
+
 def process_decvars_inverse(dec_vars, utilities_names, dec_vars_names_columns):
     data = {}
     for dv, col in dec_vars_names_columns.iteritems():
         data_dv = {}
         for name, u in zip(utilities_names, range(len(utilities_names))):
-            if not (dv == 'Transfer\nTrigger' and name == 'Cary'):
-                data_dv[name] = dec_vars[:, col + u]
+            if not ((dv == 'Transfer Trigger' or
+                     dv == 'Infrastructure\n(long-term) Trigger') and
+                    name == 'Cary'):
+                data_dv[name] = dec_vars[col + u]
 
         data[dv] = data_dv
 

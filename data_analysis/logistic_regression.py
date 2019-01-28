@@ -181,18 +181,20 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    ndivs = 4
+    # generate x and y ticks
+    ndivs = 3
     xticks = [xlims[0] + xlims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
               + [xlims[1]]
     xtick_labels = ['{:.1f}%'.format(p * 100) for p in xticks]
-    ax.set_xticks(xticks)
-    ax.set_xticklabels(xtick_labels,
-                       {'fontname': 'Open Sans Condensed', 'size': 11})
-
-    ndivs = 6
+    ndivs = 3
     yticks = [ylims[0] + ylims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
              + [ylims[1]]
     ytick_labels = ['{:.0f}%'.format(p * 100) for p in yticks]
+
+    # set x and y ticks
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xtick_labels,
+                       {'fontname': 'Open Sans Condensed', 'size': 11})
     ax.set_yticks(yticks)
     ax.set_yticklabels(ytick_labels,
                        {'fontname': 'Open Sans Condensed', 'size': 11})

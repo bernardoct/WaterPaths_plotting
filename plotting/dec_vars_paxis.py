@@ -3,12 +3,10 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 
 
-def plot_dec_vars_paxis(dec_vars, grid_size, max_mins):
+def plot_dec_vars_paxis(dec_vars, max_mins, axes, c, decvars_order, label):
     n_dvs = len(dec_vars)
 
-    fig, axes = plt.subplots(grid_size[0], grid_size[1])
-
-    for dv_name, ax in zip(dec_vars.keys(), axes.ravel()):
+    for dv_name, ax in zip(decvars_order, axes.ravel()):
         utils_names = dec_vars[dv_name].keys()
         dv_data = []
         for u_name in utils_names:
@@ -17,17 +15,20 @@ def plot_dec_vars_paxis(dec_vars, grid_size, max_mins):
         dv_data = np.array(dv_data).T
 
         # If JLA, normalize data if needed
-        if dv_name == 'Jordan Lake\nAllocation':
-            for d in dv_data.T:
-                total_alloc = np.sum(d)
-                if total_alloc > 1.:
-                    d /= total_alloc
+        if dv_name == 'Jordan Lake Allocation':
+            total_alloc = np.sum(dv_data)
+            if total_alloc > 1.:
+                for i in range(len(dv_data)):
+                    dv_data[i] /= total_alloc
 
+        ax.set_yticks([])
         ax.set_ylim(max_mins[dv_name])
-        for data, c in zip(dv_data, cm.get_cmap('Accent').colors):
-            ax.plot(data, c=c)
+        ax.plot(dv_data, c=c, label=label)
         ax.set_xticks(range(len(utils_names)))
-        ax.set_xticklabels(utils_names)
-        ax.set_title(dv_name)
+        ax.set_xticklabels(utils_names,
+                           {'fontname': 'Open Sans Condensed', 'size': 11})
+        ax.set_title(dv_name, {'fontname': 'Gill Sans MT', 'size': 12})
 
-    plt.show()
+    axes[1, 1].legend(loc='lower center', bbox_to_anchor=(0.5, -.4),
+                      ncol=2,
+                      prop={'family': 'Open Sans Condensed', 'size': 12})

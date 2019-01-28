@@ -187,7 +187,7 @@ def group_objectives(objectives, max_min):
     nobjs_total = objectives.shape[1]
     nobjs = len(max_min)
     grouped_objs = np.zeros((nsols, len(max_min)))
-    for i in range(nobjs):
+    for i in range(nobjs - 1):
         objs = range(i, nobjs_total, nobjs)
         if max_min[i] == 'min':
             grouped_objs[:, i] = np.max(objectives[:, objs], axis=1)
@@ -195,5 +195,9 @@ def group_objectives(objectives, max_min):
             grouped_objs[:, i] = np.min(objectives[:, objs], axis=1)
         else:
             raise Exception('You must specify either \'max\' or \'min\'')
+
+    jla_ix = range(5, nobjs_total, nobjs)
+    grouped_objs[:, 5] = np.sum(objectives[:, jla_ix], axis=1)
+    grouped_objs[:, 5][grouped_objs[:, 5] > 0.69] = 0.69
 
     return grouped_objs

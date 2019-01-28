@@ -6,8 +6,8 @@ def add_bubble_highlight(xy, color, text, ax):
     (x, y) = xy
     kwargs = {'fontname' : 'Gill Sans MT', 'color' : 'white'}#, 'fontweight' : 'heavy'}
 
-    # dy = np.ptp(ax.get_ylim()) / 15.
-    dy = 0.25
+    dy = np.ptp(ax.get_ylim()) / 8.5
+    # dy = 0.25
 
     ax.annotate(text, xy=xy, xytext=(x, y + dy),
                 size=10, va="center",
