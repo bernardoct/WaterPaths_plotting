@@ -314,6 +314,7 @@ def get_best_worse_rdm_factors_based(rdm_factors, important_factors, pass_fail,
                                corrected_factors[1])))
 
     best, worse = np.argmin(elip_norm_sq), np.argmax(elip_norm_sq)
+    best, worse = 969, 97
     return best, worse
 
 
@@ -374,21 +375,23 @@ def plot_scenario_discovery_solution_utility(utility_name,
 
     specific_rdm = -1
     if len(features_speficig_rdm) > 0:
-        specific_rdm = get_rdm_closest_to(non_crashed_rdm, features_speficig_rdm,
-                           values_speficig_rdm, feature_importances)
+        # specific_rdm = get_rdm_closest_to(non_crashed_rdm, features_speficig_rdm,
+        #                    values_speficig_rdm, feature_importances)
+        specific_rdm = 598
+        specific_rdm = 598
 
     # best_rdm, worse_rdm = get_best_worse_rdm_objectives_based(
     #     objectives_by_solution[s], performance_criteria,
     #     np.array(apply_criteria_on_objs) + 6 * u, invert)
 
     x_best_rdm, y_best_rdm = non_crashed_rdm[
-        best_rdm, [most_influential_factors[0],
+        np.sum(non_crashed_by_solution[s][:best_rdm]), [most_influential_factors[0],
                    most_influential_factors[1]]]
     x_worse_rdm, y_worse_rdm = non_crashed_rdm[
-        worse_rdm, [most_influential_factors[0],
+        np.sum(non_crashed_by_solution[s][:worse_rdm]), [most_influential_factors[0],
                     most_influential_factors[1]]]
     x_specific_rdm, y_specific_rdm = non_crashed_rdm[
-        specific_rdm, [most_influential_factors[0],
+        np.sum(non_crashed_by_solution[s][:specific_rdm]), [most_influential_factors[0],
                     most_influential_factors[1]]]
 
     if ax is not None:
@@ -513,10 +516,10 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
     for ax, u in zip(axes[0], np.array(utilities)[utilitiy_ids]):
         ax.set_title(u, {'fontname': 'Gill Sans MT', 'size': 12})
 
-    # fig.suptitle('Scenario Discovery for the Two Buyer Preferred Solutions',
-    #              **{'fontname': 'Gill Sans MT', 'size': 16})
-    # plt.savefig(files_root_directory + '/scenario_discovery.svg')
-    plt.show()
+    fig.suptitle('Scenario Discovery for the Two Buyer Preferred Solutions',
+                 **{'fontname': 'Gill Sans MT', 'size': 16})
+    plt.savefig(files_root_directory + '/scenario_discovery.svg')
+    # plt.show()
 
     # Load pathways before plotting. Necessary to determine what infrastructure
     # is built across all realizations to have as few sources as possible in
@@ -524,21 +527,10 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
     plt.close()
 
     utilities_ids_pathways = [1, 3]
-    gs_kw=dict(width_ratios=[1, 1, 1], height_ratios=[0.5, 1, 0.5, 1, 1.2])
-
-    non_crashed_rdms = len(non_crashed_by_solution[s])
-    rdm_to_load = []
-    best_rdm_worse_rdm_all_sols_adjusted = []
-    for best_rdm_worse_rdm in best_rdm_worse_rdm_all_sols:
-        best_rdm_worse_rdm_all_sols_adjusted.append([])
-        for bw in best_rdm_worse_rdm:
-            rdm_to_load = []
-            for rdm in bw:
-                rdm_to_load.append(np.arange(non_crashed_rdms)[non_crashed_by_solution[s]][rdm])
-            best_rdm_worse_rdm_all_sols_adjusted[-1].append(rdm_to_load)
+    gs_kw=dict(width_ratios=[1, 1, 1], height_ratios=[0.5, 1, 0.5, 1, 1.3])
 
     for s, sn, best_rdm_worse_rdm in zip(sols, solution_names[sols_to_plot],
-                                         best_rdm_worse_rdm_all_sols_adjusted):
+                                         best_rdm_worse_rdm_all_sols):
         print "Working on pathways for solution {}".format(s)
         fig, axes = plt.subplots(len(utilities_ids_pathways) * 2 + 1, 3, figsize=(9, 11), sharey='row',
                                  constrained_layout=True, gridspec_kw=gs_kw) # 3 is the number of RDMs
@@ -577,8 +569,8 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
             for l in ax.get_xticklabels():
                 l.set_fontproperties('Open Sans Condensed')
 
-        titles = ['Most Favorable\nSOW', '80% demand growth\nmultiplier SOW',
-                  'Least Favorable\nSOW']
+        titles = ['Most Favorable', '80% demand growth mult.',
+                  'Least Favorable']
         for ax, t in zip(axes[0], titles):
             ax.set_title(t, {'fontname': 'Gill Sans MT', 'size': 12})
 
@@ -587,25 +579,31 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
                           {'fontname': 'Open Sans Condensed',
                            'fontweight': 'semibold'})
 
+        # p = Pool(2)
         # Plot capacities
         for bw, u, axes_row in zip(best_rdm_worse_rdm,
                                    utilities_ids_pathways,
                                    axes[range(0, len(utilities_ids_pathways)*2, 2)]):
-            p = Pool(8)
-            rdm_time_series = [p.map(pd.read_csv,
-                                     glob(files_root_directory +
-                                          '/Diagnostics_buyer_solutions/Utilities_s{}_RDM{}_r9*'.format(s, bw[i])))
-                               for i in [0, 2, 1]]
+            rdm_time_series = [
+                [pd.read_csv(f) for f in glob(files_root_directory + '/Diagnostics_buyer_solutions/Utilities_s{}_RDM{}_r*'.format(s, bw[i]))[:200]]
+                for i in [0, 2, 1]
+            ]
 
             for dfs, ax in zip(rdm_time_series, axes_row):
                 nweeks = 0
+                count = 0
                 for df in dfs:
                     capacities = df['{}capacity'.format(u)].as_matrix()
                     nweeks = len(capacities)
                     ax.fill_between(range(nweeks), capacities, 0, color='r', alpha=1./len(dfs))
+                    count += 1
+                    print count
                 ax.set_ylabel('{}\nStorage Capacity [MG]'.format(utilities[u]))
                 ax.set_xlim([0, nweeks])
-                ax.set_ylim([0, 35000])
+                ax.set_ylim([0, 40000])
+                ax.set_yticks(range(0, 40001, 10000))
+                ax.set_yticklabels(['{:.0f}%'.format(x) for x in ax.get_yticks()], {'fontname': 'Open Sans Condensed',
+                           'fontweight': 'semibold'})
 
         infra_built = np.unique(np.vstack(pathways)[:, 3])
         cb_pos = [0.2, 0.23, 0.7, 0.01]

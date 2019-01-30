@@ -121,12 +121,12 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
     feature_importances = deepcopy(classifier.feature_importances_)
     feature_importances /= np.sum(feature_importances)
 
-    ax.set_xlabel('{} ({:.2f}%)'.format(
+    ax.set_xlabel('{} ({:.0f}%)'.format(
         labels[most_influential_pair[0]],
         feature_importances[most_influential_pair[0]] * 100),
         {'fontname': 'Open Sans Condensed', 'size': 12}
     )
-    ax.set_ylabel('{} ({:.2f}%)'.format(
+    ax.set_ylabel('{} ({:.0f}%)'.format(
         labels[most_influential_pair[1]],
         feature_importances[most_influential_pair[1]] * 100),
         {'fontname': 'Open Sans Condensed', 'size': 12}
@@ -185,7 +185,7 @@ def factor_mapping_plot(most_influential_factors, pass_fail,
     ndivs = 3
     xticks = [xlims[0] + xlims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
               + [xlims[1]]
-    xtick_labels = ['{:.1f}%'.format(p * 100) for p in xticks]
+    xtick_labels = ['{:.0f}%'.format(p * 100) for p in xticks]
     ndivs = 3
     yticks = [ylims[0] + ylims.ptp() * 1. / ndivs * p for p in range(ndivs)] \
              + [ylims[1]]

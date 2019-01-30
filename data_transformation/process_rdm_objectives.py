@@ -178,6 +178,7 @@ def load_pathways_solution(files_root_directory, s, rdms):
                 comments='R',
                 dtype=int)
         )
+        print 'Pathways_s{}_RDM{}.out'.format(s, rdm)
 
     return pathways
 
