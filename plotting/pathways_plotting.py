@@ -109,8 +109,8 @@ def plot_colormap_pathways(pathways_utility, nweeks, source_colormap_id,
 
     ax.grid(False)
     ax.set_yticks([0, nrealizations])
-    ax.set_yticklabels(['Little and late\nnew infrastructure', 'Significant '
-                       'and early\nnew infrastructure'],
+    ax.set_yticklabels(['Significant and early\nnew infrastructure',
+                        'Little and late\nnew infrastructure'],
                        {'fontname': body_font, 'size': tick_font_size})
     xticks_at = np.arange(0, nweeks, 52.1 * 15)
     ax.set_xticks(xticks_at)

@@ -7,7 +7,7 @@ from data_transformation.process_decvars import process_decvars_inverse, \
     check_repeated
 from data_transformation.process_rdm_objectives import *
 from plotting.dec_vars_paxis import plot_dec_vars_paxis
-from plotting.diagnostics import plot_utility_comparison_parallel_figures
+from plotting.diagnostics import plot_utility_comparison_parallel_figures, plot_water_sources_parallel_figures
 from plotting.parallel_axis import __calculate_alphas
 from plotting.pathways_plotting import *
 from plotting.parallel_axis import *
@@ -314,7 +314,6 @@ def get_best_worse_rdm_factors_based(rdm_factors, important_factors, pass_fail,
                                corrected_factors[1])))
 
     best, worse = np.argmin(elip_norm_sq), np.argmax(elip_norm_sq)
-    best, worse = 969, 97
     return best, worse
 
 
@@ -375,23 +374,21 @@ def plot_scenario_discovery_solution_utility(utility_name,
 
     specific_rdm = -1
     if len(features_speficig_rdm) > 0:
-        # specific_rdm = get_rdm_closest_to(non_crashed_rdm, features_speficig_rdm,
-        #                    values_speficig_rdm, feature_importances)
-        specific_rdm = 598
-        specific_rdm = 598
+        specific_rdm = get_rdm_closest_to(non_crashed_rdm, features_speficig_rdm,
+                           values_speficig_rdm, feature_importances)
 
     # best_rdm, worse_rdm = get_best_worse_rdm_objectives_based(
     #     objectives_by_solution[s], performance_criteria,
     #     np.array(apply_criteria_on_objs) + 6 * u, invert)
 
     x_best_rdm, y_best_rdm = non_crashed_rdm[
-        np.sum(non_crashed_by_solution[s][:best_rdm]), [most_influential_factors[0],
+        best_rdm, [most_influential_factors[0],
                    most_influential_factors[1]]]
     x_worse_rdm, y_worse_rdm = non_crashed_rdm[
-        np.sum(non_crashed_by_solution[s][:worse_rdm]), [most_influential_factors[0],
+        worse_rdm, [most_influential_factors[0],
                     most_influential_factors[1]]]
     x_specific_rdm, y_specific_rdm = non_crashed_rdm[
-        np.sum(non_crashed_by_solution[s][:specific_rdm]), [most_influential_factors[0],
+        specific_rdm, [most_influential_factors[0],
                     most_influential_factors[1]]]
 
     if ax is not None:
@@ -401,7 +398,7 @@ def plot_scenario_discovery_solution_utility(utility_name,
                    clip_on=False)
         ax.scatter([x_worse_rdm], [y_worse_rdm],
                    c=[cmap_mod(0.5 - from_middle)], edgecolor='black',
-                   linewidths=1.25, marker='*', s=150, label='Most Unfavorable',
+                   linewidths=1.25, marker='*', s=150, label='Least Favorable',
                    clip_on=False)
         ax.scatter([x_specific_rdm], [y_specific_rdm],
                    c='b', edgecolor='black',
@@ -415,6 +412,11 @@ def plot_scenario_discovery_solution_utility(utility_name,
         # plt.savefig('{}/scenario_discovery_solution_{}_{}.png'.format(
         #     files_root_directory, s, u))
         # plt.close()
+
+        print u, ':',
+        for rdm in [best_rdm, worse_rdm, specific_rdm]:
+            print np.arange(2000)[non_crashed_by_solution[s]][rdm],
+        print ''
 
     return best_rdm, worse_rdm, specific_rdm
 
@@ -479,7 +481,7 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
     sols = np.array([most_robust_for_each[i] for i in sols_to_plot])
     sols_names = np.array([solution_names[i] for i in sols_to_plot])
     best_rdm_worse_rdm_all_sols = []
-    fig, axes = plt.subplots(len(sols), len(utilitiy_ids), figsize=(10, 5))
+    fig, axes = plt.subplots(len(sols), len(utilitiy_ids), figsize=(10, 6))
     plt.subplots_adjust(wspace=0.3, hspace=0.4)
     for s, sn, axes_row in zip(sols, sols_names, axes):
         su_all = []
@@ -527,12 +529,25 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
     plt.close()
 
     utilities_ids_pathways = [1, 3]
-    gs_kw=dict(width_ratios=[1, 1, 1], height_ratios=[0.5, 1, 0.5, 1, 1.3])
+    gs_kw=dict(width_ratios=[1, 1, 1], height_ratios=[0.5, 1, 0.5, 1, 1.2])
+
+    non_crashed_rdms = len(non_crashed_by_solution[s])
+    rdm_to_load = []
+    best_rdm_worse_rdm_all_sols_adjusted = []
+    for best_rdm_worse_rdm in best_rdm_worse_rdm_all_sols:
+        best_rdm_worse_rdm_all_sols_adjusted.append([[0] * 3])
+        for bw in best_rdm_worse_rdm:
+            rdm_to_load = []
+            for rdm in bw:
+                rdm_to_load.append(np.arange(2000)[non_crashed_by_solution[s]][rdm])
+                print np.arange(2000)[non_crashed_by_solution[s]][rdm],
+            best_rdm_worse_rdm_all_sols_adjusted[-1].append(rdm_to_load)
+        print '\n'
 
     for s, sn, best_rdm_worse_rdm in zip(sols, solution_names[sols_to_plot],
-                                         best_rdm_worse_rdm_all_sols):
+                                         best_rdm_worse_rdm_all_sols_adjusted):
         print "Working on pathways for solution {}".format(s)
-        fig, axes = plt.subplots(len(utilities_ids_pathways) * 2 + 1, 3, figsize=(9, 11), sharey='row',
+        fig, axes = plt.subplots(len(utilities_ids_pathways) * 2 + 1, 3, figsize=(8.5, 11), sharey='row',
                                  constrained_layout=True, gridspec_kw=gs_kw) # 3 is the number of RDMs
         # fig.set_size_inches(10, 12)
         fig.suptitle('Pathways for Solution \"{}\" for 3 SOWs'.format(sn),
@@ -540,8 +555,8 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
         pathways = []
         pathways_solutions_rdm = []
         ax_key = axes[len(utilities_ids_pathways) * 2, 2]
-        for bw, u, axes_row in zip(best_rdm_worse_rdm,
-                                   utilities_ids_pathways,
+        for u, bw, axes_row in zip(utilities_ids_pathways,
+                                   np.array(best_rdm_worse_rdm)[utilities_ids_pathways],
                                    axes[range(1, len(utilities_ids_pathways)*2, 2)]):
 
             pathways_sol_rdm = load_pathways_solution(
@@ -581,29 +596,27 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
 
         # p = Pool(2)
         # Plot capacities
-        for bw, u, axes_row in zip(best_rdm_worse_rdm,
-                                   utilities_ids_pathways,
-                                   axes[range(0, len(utilities_ids_pathways)*2, 2)]):
+        for u, bw, axes_row in zip(utilities_ids_pathways,
+                                   np.array(best_rdm_worse_rdm)[utilities_ids_pathways],
+                                   axes[range(0, len(utilities_ids_pathways) * 2, 2)]):
             rdm_time_series = [
-                [pd.read_csv(f) for f in glob(files_root_directory + '/Diagnostics_buyer_solutions/Utilities_s{}_RDM{}_r*'.format(s, bw[i]))[:200]]
+                [pd.read_csv(f) for f in glob(files_root_directory + '/Diagnostics_buyer_solutions/Utilities_s{}_RDM{}_r*'.format(s, bw[i]))[100:200]]
                 for i in [0, 2, 1]
             ]
 
             for dfs, ax in zip(rdm_time_series, axes_row):
                 nweeks = 0
-                count = 0
                 for df in dfs:
                     capacities = df['{}capacity'.format(u)].as_matrix()
                     nweeks = len(capacities)
-                    ax.fill_between(range(nweeks), capacities, 0, color='r', alpha=1./len(dfs))
-                    count += 1
-                    print count
-                ax.set_ylabel('{}\nStorage Capacity [MG]'.format(utilities[u]))
+                    ax.fill_between(range(nweeks), capacities, 0, color=cm.get_cmap('tab10').colors[0], alpha=1./len(dfs))#, lw=0)
+                ax.set_ylabel('{}\nStorage Capacity\n[MG]'.format(utilities[u]), {'fontname': 'Open Sans Condensed',
+                           'fontweight': 'semibold', 'size': 12})
                 ax.set_xlim([0, nweeks])
                 ax.set_ylim([0, 40000])
                 ax.set_yticks(range(0, 40001, 10000))
-                ax.set_yticklabels(['{:.0f}%'.format(x) for x in ax.get_yticks()], {'fontname': 'Open Sans Condensed',
-                           'fontweight': 'semibold'})
+                ax.set_yticklabels(['{:.0f}'.format(x) for x in ax.get_yticks()], {'fontname': 'Open Sans Condensed',
+                           'fontweight': 'semibold', 'size': 10})
 
         infra_built = np.unique(np.vstack(pathways)[:, 3])
         cb_pos = [0.2, 0.23, 0.7, 0.01]
@@ -620,21 +633,21 @@ def plot_scenario_discovery_pathways(utilities, objectives_by_solution,
 
 
         plt.savefig(files_root_directory +
-                    '/complete_scenario_discovery_pathways{}.svg'.format(s))
+                    '/complete_scenario_discovery_pathways{}.png'.format(s))
         # plt.show()
         # plt.close()
 
         print 'Done with pathways for solution {}'.format(s)
 
 
-def plot_diagnostics():
+def plot_diagnostics(files_root_directory):
     ''' Time interval to plot '''
     # dt = 40
     # w0 = 1
     # weeks = range(52 * w0, 13 + 52*(w0 + dt))
     weeks = range(2344)
 
-    dec_vars = np.loadtxt('solutions_not_crashed.csv', delimiter=',')
+    dec_vars = np.loadtxt('{}solutions_not_crashed.csv'.format(files_root_directory), delimiter=',')
     rest_triggers = [[]] * 4
     transfer_triggers = [[]] * 4
     inf_triggers = [[]] * 4
@@ -656,10 +669,30 @@ def plot_diagnostics():
     inf_triggers[3] = dec_vars[:, 25]
     inf_triggers[2] = dec_vars[:, 26]
 
-    # plot_utility_comparison_parallel_io(weeks, [270, 315], rest_triggers, transfer_triggers, ins_triggers, inf_triggers, output_directory='Diagnostics_buyer_solutions/', rdms=['', 1512, 1610, 1644])
-    # plot_utility_comparison_parallel_io(weeks, [270, 315], rest_triggers, transfer_triggers, ins_triggers, inf_triggers, output_directory='Diagnostics_buyer_solutions/')
+    sol_rdm_names = \
+        [['Buyer Preferred 1 -- Durham Most Favorable',
+          'Buyer Preferred 1 -- Durham Most Unfavorable',
+          'Buyer Preferred 1 -- Durham Projected',
+          'Buyer Preferred 1 -- Raleigh Most Favorable',
+          'Buyer Preferred 1 -- Raleigh Most Unfavorable',
+          'Buyer Preferred 1 -- Raleigh Projected'],
+         ['Buyer Preferred 2 -- Durham Most Favorable',
+          'Buyer Preferred 2 -- Durham Most Unfavorable',
+          'Buyer Preferred 2 -- Durham Projected',
+          'Buyer Preferred 2 -- Raleigh Most Favorable',
+          'Buyer Preferred 2 -- Raleigh Most Unfavorable',
+          'Buyer Preferred 2 -- Raleigh Projected']]
+
     plot_utility_comparison_parallel_figures(weeks, [270, 315], rest_triggers, transfer_triggers, ins_triggers,
-        inf_triggers, output_directory='Diagnostics_buyer_solutions/', rdms=[1512, 1610, 1644], figsize=(4.9, 2), nprocs=2)
+        inf_triggers, output_directory=files_root_directory + 'Diagnostics_buyer_solutions/',
+                                             # rdms_all_sols=[[1434, 117, 1256, 1450, 564, 1427], [1881, 1017, 759, 1450, 564, 1378]],
+                                             rdms_all_sols=[[117], [1017]],
+                                             figsize=(8, 10), nprocs=6, sol_rdm_names=sol_rdm_names)
+    # plot_water_sources_parallel_figures(weeks, [270, 315],
+    #                                     output_directory=files_root_directory + 'Diagnostics_buyer_solutions/',
+    #                                          rdms_all_sols=[[1434, 117, 1256, 1450, 564, 1427],
+    #                                                         [1881, 1017, 759, 1450, 564, 1378]],
+    #                                          figsize=(8, 10), nprocs=6, sol_rdm_names=sol_rdm_names)
 
 def create_plots():
 
@@ -876,22 +909,23 @@ def create_plots():
                                     [22, 13],
                                     [23, 14],
                                     [len(sources) - 1, 15],
-                                    [7, 16],
+                                    [10, 16],
                                     [8, 17],
-                                    [17, 18]])
+                                    [17, 18],
+                                    [7, 19]])
 
     solution_names = np.array(['', 'Buyer Preferred I', 'Supplier Preferred',
                       'Buyer Preferred II'])
 
-    plot_scenario_discovery_pathways(utilities, objectives_by_solution,
-                                     source_colormap_id,
-                                     non_crashed_by_solution,
-                                     performance_criteria,
-                                     files_root_directory,
-                                     rdm_factors, 7, apply_criteria_on_objs,
-                                     non_repeated_dec_var_ix,
-                                     most_robust_for_each, sources,
-                                     solution_names, [1, 3])
+    # plot_scenario_discovery_pathways(utilities, objectives_by_solution,
+    #                                  source_colormap_id,
+    #                                  non_crashed_by_solution,
+    #                                  performance_criteria,
+    #                                  files_root_directory,
+    #                                  rdm_factors, 7, apply_criteria_on_objs,
+    #                                  non_repeated_dec_var_ix,
+    #                                  most_robust_for_each, sources,
+    #                                  solution_names, [1, 3])
 
     # re-create dictionary to plot only buyer solutions
     solutions_info = {}
@@ -905,8 +939,8 @@ def create_plots():
     np.savetxt(files_root_directory + 'solutions_not_crashed.csv', dec_vars,
                delimiter=',')
 
-    # plot_diagnostics()
-
 
 if __name__ == '__main__':
     create_plots()
+    plot_diagnostics('/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/')
+
