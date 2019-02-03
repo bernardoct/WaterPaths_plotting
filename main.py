@@ -184,63 +184,73 @@ def plot_decision_vars(dec_vars, solutions_info, files_root_directory):
                 'Jordan Lake Allocation': [0, 0.7],
                 'Infrastructure\n(long-term) Trigger': [0, 1],
                 'Insurance Trigger': [0, 1],
-                'Annual Contingency\nFund Contribution': [0, 0.1]}
+                'Annual Contingency\nFund Contribution': [0, 0.1],
+                'Insurance Payment': [0, 0.03]}
 
-    fig, axes = plt.subplots(2, len(max_mins) / 2, figsize=(8.5, 5.5))#, sharey=True)
+    fig, axes = plt.subplots(3, len(max_mins) / 2, figsize=(8.5, 5.5))#, sharey=True)
     colors = cm.get_cmap('Accent').colors
     plt.subplots_adjust(left=0.08, bottom=0.11, right=0.97,
                         top=0.94, hspace=0.35)
 
+    utilities_order = ['Durham', 'OWASA', 'Raleigh', 'Cary']
+
     for s, c, sol_name in zip(solutions_info['ids'], colors,
                                         solutions_info['labels']):
         dec_vars_processed = process_decvars_inverse(
-            dec_vars[s], ['Durham', 'OWASA', 'Raleigh', 'Cary'],
+            dec_vars[s], utilities_order,
             {'Restriction Trigger': 0, 'Transfer Trigger': 4,
-             'Insurance Trigger': 15, 'Annual Contingency\nFund Contribution': 11, 'Infrastructure\n(long-term) Trigger': 23,
-             'Jordan Lake Allocation': 7}
+             'Insurance Trigger': 15,
+             'Annual Contingency\nFund Contribution': 11,
+             'Infrastructure\n(long-term) Trigger': 23,
+             'Jordan Lake Allocation': 7, 'Insurance Payment': 19}
         )
 
         decvars_order = ['Restriction Trigger', 'Transfer Trigger',
-                         'Jordan Lake Allocation', 'Infrastructure\n(long-term) Trigger',
-                         'Insurance Trigger', 'Annual Contingency\nFund Contribution']
+                         'Jordan Lake Allocation',
+                         'Infrastructure\n(long-term) Trigger',
+                         'Insurance Trigger',
+                         'Annual Contingency\nFund Contribution',
+                         'Insurance Payment']
 
         plot_dec_vars_paxis(dec_vars_processed, max_mins, axes, c,
-                            decvars_order, sol_name)
+                            decvars_order, sol_name, utilities_order)
 
-    # axes[0].set_ylabel(sol_name)
-    for ax in axes.ravel():
-        ax.set_ylim([0, 1])
-    # axes[-1, -1].legend()
+    # for ax in axes.ravel():
+    #     ax.set_ylim([0, 1])
 
-    jla_ylim = [0, 0.69]
-    axes[0, 2].set_ylim(jla_ylim)
-    axes[0, 2].set_yticks(jla_ylim)
-    axes[0, 2].set_yticklabels(['{:.00%}'.format(x) for x in jla_ylim],
-                               {'fontname': 'Open Sans Condensed', 'size': 11})
-    acfc_ylim = [0, 0.1]
-    axes[1, 2].set_ylim(acfc_ylim)
-    axes[1, 2].set_yticks(acfc_ylim)
-    axes[1, 2].set_yticklabels(['{:.00%}'.format(x) for x in acfc_ylim],
-                               {'fontname': 'Open Sans Condensed', 'size': 11})
-    rof_ylim = [0, 1]
-    rof_ytick_labels = ['Low\n(High Usage)', 'High\n(Low Usage)']
-    axes[0, 0].set_ylim(rof_ylim)
-    axes[0, 0].set_yticks(rof_ylim)
-    axes[0, 0].set_yticklabels(rof_ytick_labels,
-                               {'fontname': 'Open Sans Condensed', 'size': 11})
-    axes[1, 0].set_ylim(rof_ylim)
-    axes[1, 0].set_yticks(rof_ylim)
-    axes[1, 0].set_yticklabels(rof_ytick_labels,
-                               {'fontname': 'Open Sans Condensed', 'size': 11})
+    # jla_ylim = [0, 0.69]
+    # axes[0, 2].set_ylim(jla_ylim)
+    # axes[0, 2].set_yticks(jla_ylim)
+    # axes[0, 2].set_yticklabels(['{:.00%}'.format(x) for x in jla_ylim],
+    #                            {'fontname': 'Open Sans Condensed', 'size': 11})
+    # acfc_ylim = [0, 0.1]
+    # axes[1, 2].set_ylim(acfc_ylim)
+    # axes[1, 2].set_yticks(acfc_ylim)
+    # axes[1, 2].set_yticklabels(['{:.00%}'.format(x) for x in acfc_ylim],
+    #                            {'fontname': 'Open Sans Condensed', 'size': 11})
+    # rof_ylim = [0, 1]
+    # rof_ytick_labels = ['Low\n(High Usage)', 'High\n(Low Usage)']
+    # axes[0, 0].set_ylim(max_mins['Restriction Trigger'])
+    # axes[0, 0].set_yticks(axes[0, 0].get_ylim())
+    # axes[0, 0].set_yticklabels(rof_ytick_labels,
+    #                            {'fontname': 'Open Sans Condensed', 'size': 11})
+    # axes[1, 0].set_ylim(max_mins['Restriction Trigger'])
+    # axes[1, 0].set_yticks(axes[1, 0].get_ylim())
+    # axes[1, 0].set_yticklabels(rof_ytick_labels,
+    #                            {'fontname': 'Open Sans Condensed', 'size': 11})
+    # axes[2, 0].set_ylim(max_mins['Insurance Payment'])
+    # axes[2, 0].set_yticks(axes[2, 0].get_ylim())
+    # axes[2, 0].set_yticklabels(['{:.0%}'.format(x) for x in axes[2, 0].get_ylim()],
+    #                            {'fontname': 'Open Sans Condensed', 'size': 11})
+    #
+    # for i in [0, 1]:
+    #     for j in [0, 2]:
+    #         axes[i, j].tick_params(top='off', bottom='off', left='off',
+    #                                right='off',
+    #                                labelleft='on', labelbottom='on')
 
-    for i in [0, 1]:
-        for j in [0, 2]:
-            axes[i, j].tick_params(top='off', bottom='off', left='off',
-                                   right='off',
-                                   labelleft='on', labelbottom='on')
-
-    # plt.show()
-    plt.savefig(files_root_directory + 'decvars.svg')
+    plt.show()
+    # plt.savefig(files_root_directory + 'decvars.svg')
 
     # gmm_cluster(dec_vars, files_root_directory)
 
@@ -696,8 +706,8 @@ def plot_diagnostics(files_root_directory):
 
 def create_plots():
 
-    # files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
-    files_root_directory = '/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
+    files_root_directory = 'F:/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
+    # files_root_directory = '/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/'
     n_rdm_scenarios = 2000
     n_solutions = 368
     n_objectives = 20
@@ -937,10 +947,10 @@ def create_plots():
 
     plot_decision_vars(dec_vars, solutions_info, files_root_directory)
     np.savetxt(files_root_directory + 'solutions_not_crashed.csv', dec_vars,
-               delimiter=',')
+               delimiter=',', fmt='%0.3f')
 
 
 if __name__ == '__main__':
     create_plots()
-    plot_diagnostics('/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/')
+    # plot_diagnostics('/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/')
 

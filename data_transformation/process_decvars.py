@@ -19,11 +19,19 @@ def process_decvars_inverse(dec_vars, utilities_names, dec_vars_names_columns):
     data = {}
     for dv, col in dec_vars_names_columns.iteritems():
         data_dv = {}
+
         for name, u in zip(utilities_names, range(len(utilities_names))):
             if not ((dv == 'Transfer Trigger' or
                      dv == 'Infrastructure\n(long-term) Trigger') and
                     name == 'Cary'):
                 data_dv[name] = dec_vars[col + u]
+
+        # If JLA, normalize data if needed
+        if dv == 'Jordan Lake Allocation':
+            total_alloc = sum([data_dv[name] for name in utilities_names])
+            if total_alloc > 1.:
+                for name in utilities_names:
+                    data_dv[name] /= total_alloc
 
         data[dv] = data_dv
 
