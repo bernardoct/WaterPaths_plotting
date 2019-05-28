@@ -38,6 +38,9 @@ def plot_sinusoids(samples, ny, wy=52.148):
         all_sinusoids[i, :] = y
         plt.plot(x, y, alpha=0.2, c='r')
 
+    for s in all_sinusoids:
+        plt.plot(x, s)
+
     plt.xlabel('weeks [-]')
     plt.ylabel('mu multiplier [-]')
     plt.title('Flow mean multiplier')
@@ -63,19 +66,14 @@ def sample_uniform(lows, highs, means, nsamples, nparams, ny, wy=52.148):
     for i in range(3, nparams):
         samples[:, i] = rescale(samples_raw[:, i], lows[i], highs[i])
 
-    samples_including_built = np.zeros((nsamples, 62))
-    valid_rdms = range(12) + range(26, 62)
-    for i in range(len(lows)):
-        samples_including_built[:, valid_rdms[i]] = samples[:, i]
+    plot_sinusoids(samples[:, :3], ny, wy)
 
-    # plot_sinusoids(samples[:, :3], ny, wy)
-
-    np.savetxt('TestFiles/rdm_inflows_reeval.csv', samples_including_built[:, :3])
-    np.savetxt('TestFiles/rdm_utilities_reeval.csv',
-               samples_including_built[:, 3:7])
-    np.savetxt('TestFiles/rdm_dmp_reeval.csv', samples_including_built[:, 7:11])
-    np.savetxt('TestFiles/rdm_water_sources_reeval.csv',
-               samples_including_built[:, 11:])
+    np.savetxt('rdm_inflows_test_problem_reeval.csv', samples[:, :3])
+    np.savetxt('rdm_utilities_test_problem_reeval.csv',
+               samples[:, 3:7])
+    np.savetxt('rdm_dmp_test_problem_reeval.csv', samples[:, 7:10])
+    np.savetxt('rdm_water_sources_test_problem_reeval.csv',
+               samples[:, 10:])
 
 
 def sample_beta(lows, highs, means, nsamples, nparams, base_factor,
@@ -151,27 +149,27 @@ def get_lows_highs_means_du_params():
     # 4 - Bond interest rate multiplier
     # 5 - Bond term multiplier
     # 6 - Discount rate multiplier
-    # 7, 8, 9, 10 - Restriction stage effectiveness multiplier (one for
+    # 7, 8, 9 - Restriction stage effectiveness multiplier (one for
     #   each utility)
-    # 11 - Evaporation rate multiplier
-    # 12, 14, ..., 38 - Permitting time multiplier for new infrastructure
-    # 13, 15, ..., 39 - Construction cost multiplier for new infrastructure
+    # 10 - Evaporation rate multiplier
+    # 11, 13, ..., 31 - Permitting time multiplier for new infrastructure
+    # 12, 14, ..., 32 - Construction cost multiplier for new infrastructure
 
     lows = np.array(
-        [0, 0, 0, 0.5, 1.0, 0.6, 0.6] + [0.9] * 4 + [0.8] + [0.75, 1.0] * 18)
+        [0.8, 0.20, -3.1416 / 2, 0.5, 1.0, 0.6, 0.6] + [0.9] * 3 + [0.8] + [0.75, 1.0] * 20)
     highs = np.array(
-        [0, 0, 0, 2., 1.2, 1.0, 1.4] + [1.1] * 4 + [1.2] + [1.5, 1.2] * 18)
+        [1.0, 0.35, 0., 2., 1.2, 1.0, 1.4] + [1.1] * 3 + [1.2] + [1.5, 1.2] * 20)
     means = np.array(
-        [0, 0, 0, 1.0, 1.0, 1.0, 1.0] + [1.0] * 4 + [1.0] + [1.0, 1.0] * 18)
+        [1.2, 0.50, 3.1416 / 2, 1.0, 1.0, 1.0, 1.0] + [1.0] * 3 + [1.0] + [1.0, 1.0] * 20)
 
     return lows, highs, means
 
 
-def generate_uniform_and_beta_samples(nsamples=2000, nparams=48,
+def generate_uniform_and_beta_samples(nsamples=2000, ny=40,
                                       base_factor=1.5,
                                       cmap=cm.get_cmap('cool')):
 
     lows, highs, means = get_lows_highs_means_du_params()
 
-    # sample_uniform(lows, highs, means, n_samples, n_params)
-    sample_beta(lows, highs, means, nsamples, nparams, base_factor, cmap=cmap)
+    sample_uniform(lows, highs, means, nsamples, len(lows), ny)
+    # sample_beta(lows, highs, means, nsamples, nparams, base_factor, cmap=cmap)

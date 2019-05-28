@@ -92,7 +92,7 @@ def print_triggers(axes, sol, utilities_ids, my_vars, vars_ids,
             xlim = ax.get_xlim()
 
             ax.plot(xlim, [rest_triggers[u][sol]] * 2, label='rt', lw=0.5,
-                    c='g')
+                    c='y')
             ax.plot(xlim, [transfer_triggers[u][sol]] * 2, label='tt', lw=0.5,
                     c='b')
             ax.plot(xlim, [ins_triggers[u][sol]] * 2, label='inst', lw=0.5,
@@ -103,7 +103,7 @@ def print_triggers(axes, sol, utilities_ids, my_vars, vars_ids,
         for ax, u in zip(axes[lt_rof_row[0]], utilities_ids_int):
             xlim = ax.get_xlim()
 
-            ax.plot(xlim, [inf_triggers[u][sol]] * 2, label='inft')
+            ax.plot(xlim, [inf_triggers[u][sol]] * 2, label='inft', c='r')
 
 
 def plot_utility_comparison_parallel_io(weeks, sols, rest_triggers,
@@ -192,11 +192,9 @@ def import_data(output_directory, nreals, sr, nprocs=1):
             '{}Policies_s{}_r*.csv'.format(output_directory, s))[:nreals]
     else:
         utilities_files = glob(
-            '{}Utilities_s{}_RDM{}_r*.csv'.format(output_directory, s, r))[
-                          :nreals]
+            '{}Utilities_s{}_RDM{}_r*.csv'.format(output_directory, s, r))[:nreals]
         policy_files = glob(
-            '{}Policies_s{}_RDM{}_r*.csv'.format(output_directory, s, r))[
-                       :nreals]
+            '{}Policies_s{}_RDM{}_r*.csv'.format(output_directory, s, r))[:nreals]
     files = zip(utilities_files, policy_files)
 
     ''' Don't touch '''
@@ -229,9 +227,10 @@ def plot_one_figure_utilities(weeks, rest_triggers, transfer_triggers, ins_trigg
                     'Storage\n[MG]']
     rof_triggers = ['Restriction', 'Transfers', 'Insurance']
 
-    vars_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    vars_ids = [0, 1, 3, 4]
+    # vars_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     # vars_ids = [2, 10]
-    utilities_ids_int = [1, 3]
+    utilities_ids_int = [1, 2, 3]
 
     my_columns, y_labels = create_utility_column_headers(utilities_ids,
                                                          my_vars, vars_ids,
@@ -254,9 +253,9 @@ def plot_one_figure_utilities(weeks, rest_triggers, transfer_triggers, ins_trigg
         plot_diagnostics(df, my_columns, y_labels, weeks, axes, 'r', alpha,
                          np.array(scale)[vars_ids])
 
-    ins_max_min = [1, 400]
+    ins_max_min = [1, 50]
     ax_ylims = [[0, 3.5e4], [0, 1], [0, 0.3], [0, 2100], [0, 2100], [0, 125],
-                [0, 0.5], [-1000, 1000], ins_max_min, ins_max_min, [0, 3.5e4]]
+                [0, 0.5], [-100, 500], ins_max_min, ins_max_min, [0, 3.5e4]]
 
     for rax, c in zip(axes, vars_ids):
         for ax in rax:
@@ -289,8 +288,9 @@ def plot_one_figure_utilities(weeks, rest_triggers, transfer_triggers, ins_trigg
 
     plt.suptitle(name, **{'fontname': 'Gill Sans MT', 'size': 14})
     print name
-    plt.savefig('{}Diagnostics_s{}_RDM{}.png'.format(output_directory, s, r))
-    plt.savefig('{}Diagnostics_s{}_RDM{}.svg'.format(output_directory, s, r))
+    # plt.savefig('{}Diagnostics_s{}_RDM{}.png'.format(output_directory, s, r))
+    # plt.savefig('{}Diagnostics_s{}_RDM{}.svg'.format(output_directory, s, r))
+    plt.show()
 
 
 def plot_one_figure_water_sources(weeks, output_directory, nreals, figsize, sr):
@@ -357,8 +357,8 @@ def plot_one_figure_water_sources(weeks, output_directory, nreals, figsize, sr):
 
     plt.suptitle(name, **{'fontname': 'Gill Sans MT', 'size': 14})
     print '{}Diagnostics_ws_s{}_RDM{}.png'.format(output_directory, s, r)
-    plt.savefig('{}Diagnostics_ws_s{}_RDM{}.png'.format(output_directory, s, r))
-    plt.savefig('{}Diagnostics_ws_s{}_RDM{}.svg'.format(output_directory, s, r))
+    plt.savefig('{}Diagnostics_ws_s{}_RDM{}_{}.png'.format(output_directory, name, s, r))
+    plt.savefig('{}Diagnostics_ws_s{}_RDM{}_{}.svg'.format(output_directory, name, s, r))
 
 
 def plot_utility_comparison_parallel_figures(weeks, sols, rest_triggers,
@@ -385,7 +385,8 @@ def plot_utility_comparison_parallel_figures(weeks, sols, rest_triggers,
 
     # Pool(4).map(partial_plot_figure, srn)
     for sr_ in srn:
-        partial_plot_figure(sr_)
+        plot_one_figure_utilities(weeks, rest_triggers, transfer_triggers, ins_trigger, inf_triggers, output_directory,
+                                  nreals, figsize, 1, sr_)
 
 
 def plot_water_sources_parallel_figures(weeks, sols, rdms_all_sols=[['']],

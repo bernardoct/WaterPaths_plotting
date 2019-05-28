@@ -6,6 +6,7 @@ from data_analysis.sorting_pseudo_robustness import \
 from data_transformation.process_decvars import process_decvars_inverse, \
     check_repeated
 from data_transformation.process_rdm_objectives import *
+from generate_rdm_samples.generate_samples_uniform import generate_uniform_and_beta_samples
 from plotting.dec_vars_paxis import plot_dec_vars_paxis
 from plotting.diagnostics import plot_utility_comparison_parallel_figures, plot_water_sources_parallel_figures
 from plotting.parallel_axis import __calculate_alphas
@@ -951,6 +952,7 @@ def create_plots():
 
 
 if __name__ == '__main__':
-    create_plots()
+    # create_plots()
     # plot_diagnostics('/media/DATA/Dropbox/Bernardo/Research/WaterPaths_results/rdm_results/')
+    generate_uniform_and_beta_samples(nsamples=2000)
 
